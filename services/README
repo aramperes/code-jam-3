@@ -1,0 +1,8 @@
+  SERVICES
+
+client-host: Static file hosting for browser game.
+
+game-host: Multiplayer, game logic, API.
+
+nginx: HTTP reverse proxy.
+
