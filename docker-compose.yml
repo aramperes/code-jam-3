@@ -45,5 +45,5 @@ services:
   redis:
     container_name: redis
     image: redis
-    volumes:
-      - /docker/host/dir:/data
+    # volumes:
+    #  - /docker/host/dir:/data
