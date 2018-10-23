@@ -65,6 +65,10 @@
   }
   ```
 
+### `s-c handshake:upgrade`
+
+**Payload**: *none*
+
 ## `lobby`
 
 ### `c-s lobby:state`

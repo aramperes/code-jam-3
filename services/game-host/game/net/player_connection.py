@@ -20,4 +20,5 @@ class PlayerConnection:
 
     def on_receive(self, message: InboundMessage):
         if isinstance(message, HandshakeIdentifyMessage):
+            message: HandshakeIdentifyMessage = message
             print(f"Received identification: {message.token}")
