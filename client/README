@@ -1,0 +1,5 @@
+  CLIENT
+
+
+Front-end application written in flex. To compile, use `pipenv run compile`.
+The output will be in ../services/client-host/project/templates/_flexx_output.html

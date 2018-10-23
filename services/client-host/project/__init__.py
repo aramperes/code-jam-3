@@ -7,7 +7,7 @@ flask = Flask(__name__)
 
 @flask.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("_flexx_output.html")
 
 
 def run():
