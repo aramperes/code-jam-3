@@ -1,25 +1,23 @@
 import asyncio
-import json
-import os
 import secrets
-from concurrent.futures import ProcessPoolExecutor
-from threading import Thread
+from typing import Dict
 
 import redis
-import responder
 import websockets
+from game.net import INBOUND_REGISTRY
+from game.net.handshake.ready import HandshakeReadyMessage
+from game.net.message import InboundMessage
+from game.net.player_connection import PlayerConnection
 
 
 class GameHost:
-    def __init__(self, api: responder.API, redis_pool: redis.ConnectionPool):
-        self.api = api
+    def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool):
+        self._ws_host = host
+        self._ws_port = port
         self.redis_pool = redis_pool
+        self._ws_connections: Dict[str, PlayerConnection] = {}
 
-        self.process_pool = ProcessPoolExecutor(2)
-        self._init_routes()
-
-        thread = Thread(target=self._init_websocket_server)
-        thread.start()
+        self._init_websocket_server()
 
     def _init_websocket_server(self):
         loop = asyncio.new_event_loop()
@@ -27,42 +25,38 @@ class GameHost:
         loop.run_until_complete(
             websockets.serve(
                 self._ws_loop(),
-                host=os.getenv('WS_HOST', 'localhost'),
-                port=int(os.getenv('WS_HOST', 6789))
+                host=self._ws_host,
+                port=self._ws_port
             )
         )
         loop.run_forever()
 
     def _ws_loop(self):
         async def loop(websocket: websockets.WebSocketServerProtocol, path):
-            session_token = secrets.token_urlsafe(64)
-            print(f"New connection! Session token: {session_token}")
-
-            handshake_ready = self._build_message(session_token, "handshake:ready", None)
-            await websocket.send(handshake_ready)
+            connection = await self._ws_init_connection(websocket)
+            self._ws_connections[connection.session_token] = connection
 
             while True:
                 try:
                     data = await websocket.recv()
-                    print(data)
+                    message = InboundMessage(data)
+                    op_code = message.op
+                    message = INBOUND_REGISTRY[op_code](data)
+
+                    connection.on_receive(message)
                 except websockets.exceptions.ConnectionClosed:
-                    print(f"Session died: {session_token}")
+                    print(f"Session died: {connection.session_token}")
+                    del self._ws_connections[connection.session_token]
                     break
 
         return loop
 
-    def _build_message(self, session: str, op: str, payload: object) -> str:
-        return json.dumps({
-            "session": session,
-            "op": op,
-            "payload": payload
-        })
-
-    def _init_routes(self):
-        @self.api.route("/")
-        async def index(req, resp):
-            resp.media = {
-                "version": "0.0.1",
-                "about": "This is the game host. It manages the multiplayer feature of the game.",
-                "team": "Possible Jeans"
-            }
+    async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol) -> PlayerConnection:
+        session_token = secrets.token_urlsafe(64)
+        player_connection = PlayerConnection(
+            websocket=websocket,
+            session_token=session_token
+        )
+        print(f"New connection! Session token: {session_token}")
+        await player_connection.send(HandshakeReadyMessage())
+        return player_connection

@@ -46,7 +46,7 @@
   }
   ```
 
-### `s-c handshake:prompt_new`
+### `s-c handshake:prompt_new_user`
 
   **Payload**:
   ```json
@@ -55,7 +55,7 @@
   }
   ```
 
-### `c-s handshake:new`
+### `c-s handshake:new_user`
 
   **Payload**:
   ```json

@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-responder = "==0.1.6"
 redis = "*"
 websockets = "*"
 
