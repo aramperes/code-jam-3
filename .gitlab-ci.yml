@@ -20,11 +20,12 @@ before_script:
   - pip install pipenv
 
 stages:
+  - prebuild
   - build
   - docker
   - lint
 
-build:client:
+prebuild:client:
   stage: build
   script:
     - cd client
@@ -47,7 +48,7 @@ build:client-host:
     - pipenv sync --dev
     - pipenv run compile
   dependencies:
-    - build:client
+    - prebuild:client
 
 docker:
   stage: docker
