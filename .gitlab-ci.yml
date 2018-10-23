@@ -58,4 +58,4 @@ docker:
   dependencies:
     - build:client
   before_script:
-    - docker-compse --version
+    - docker-compose --version
