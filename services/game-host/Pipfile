@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 responder = "==0.1.6"
 redis = "*"
+websockets = "*"
 
 [dev-packages]
 "flake8" = "*"

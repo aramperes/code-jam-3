@@ -1,5 +1,17 @@
 # Protocol Documentation
 
+## Frame
+
+**Payload**:
+
+```json
+{
+  "op": "<protocol>:<action>",
+  "session": "<session token given by server>",
+  "payload": { }
+}
+```
+
 ## `handshake`
 
 ### `s-c handshake:ready`
