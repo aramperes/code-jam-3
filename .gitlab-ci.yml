@@ -20,13 +20,12 @@ before_script:
   - pip install pipenv
 
 stages:
-  - prebuild
   - build
-  - docker
   - lint
+  - docker
 
 build:client:
-  stage: prebuild
+  stage: build
   script:
     - cd client
     - pipenv sync --dev
@@ -34,31 +33,6 @@ build:client:
   artifacts:
     paths:
       - services/client-host/project/templates/_flexx_output.html
-
-build:game-host:
-  stage: build
-  script:
-    - cd services/game-host
-    - pipenv sync --dev
-
-build:client-host:
-  stage: build
-  script:
-    - cd services/client-host
-    - pipenv sync --dev
-    - pipenv run compile
-  dependencies:
-    - build:client
-
-docker:
-  stage: docker
-  image: docker:18.06.0-ce
-  services:
-    - docker:dind
-  script:
-    - docker-compose build
-  dependencies:
-    - build:client-host
 
 lint:game-host:
   stage: lint
@@ -73,3 +47,13 @@ lint:client-host:
     - cd services/client-host
     - pipenv sync --dev
     - pipenv run lint
+
+docker:
+  stage: docker
+  image: docker:18.06.0-ce
+  services:
+    - docker:dind
+  script:
+    - docker-compose build
+  dependencies:
+    - build:client
