@@ -80,4 +80,7 @@ class ExampleButtons(flx.Widget):
         return call
 
 
-app = flx.App(ExampleButtons)
+app = flx.App(
+    ExampleButtons,
+    title='DeathWatch'
+)
