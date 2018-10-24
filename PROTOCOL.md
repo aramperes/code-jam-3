@@ -97,14 +97,18 @@
   }
   ```
 
-### `c-s lobby:create`
+### `c-s lobby:config`
+
+  *Note: This message is used for both creating and updating a lobby. If no ID is provided,*
+  *the server will assume it is a new lobby.*
 
   **Payload**:
 
   ```json
   {
     "name": "<name>",
-    "max_players": 2
+    "max_players": 2,
+    "lobby_id": "<lobby id>|null"
   }
   ```
 
@@ -120,7 +124,7 @@
         "name": "<name>",
         "open": true,
         "created_time": "<creation timestamp>",
-        "start_time": "<start timestamp | null>",
+        "start_time": "<start timestamp>|null",
         "max_players": 2,
         "users": [
           {
@@ -150,7 +154,7 @@
   
   ```json
   {
-    "from": "<user name>",
+    "user_name": "<user name>",
     "message": "<message>"
   }
   ```
@@ -164,7 +168,7 @@
     "message": "<message>"
   }
   ```
-  
+
 ### `c-s lobby:user_ready`
 
   **Payload**:
@@ -172,5 +176,19 @@
   ```json
   {
     "ready": true
+  }
+  ```
+
+### `c-s lobby:quit`
+
+  **Payload**: *none*
+
+### `c-s lobby:kick`
+
+  **Payload**:
+  
+  ```json
+  {
+    "user_name": "<user name>"
   }
   ```
