@@ -17,6 +17,7 @@ class GameHost:
         self.redis_pool = redis_pool
         self._ws_connections: Dict[str, PlayerConnection] = {}
 
+    def run(self):
         self._init_websocket_server()
 
     def _init_websocket_server(self):

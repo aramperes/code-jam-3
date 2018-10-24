@@ -1,6 +1,7 @@
 import os
 
 import redis
+
 from game.host import GameHost
 
 redis_pool = redis.ConnectionPool(
@@ -15,3 +16,7 @@ game_host = GameHost(
     host=os.getenv("GAME_HOST", None),
     port=int(os.getenv("GAME_PORT", 5000))
 )
+
+
+def run():
+    game_host.run()
