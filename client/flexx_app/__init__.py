@@ -3,6 +3,7 @@ from pscript.stubs import JSON
 
 from flexx_app import ws, storage
 
+WS_URL = "ws://localhost:8080/game/"
 
 class ExampleButtons(flx.Widget):
     def init(self):
@@ -19,7 +20,7 @@ class ExampleButtons(flx.Widget):
         self.username_input_submit.apply_style({"visibility": "hidden"})
 
         # connect
-        self.socket = ws.create_websocket_connection("ws://localhost:5000/", self._ws_callback())
+        self.socket = ws.create_websocket_connection(WS_URL, self._ws_callback())
         # self.test_button = flx.Button(text='Click me!')
 
     @flx.reaction('username_input_submit.pointer_click')
