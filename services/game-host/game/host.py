@@ -7,14 +7,19 @@ import websockets
 from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage
-from game.net.player_connection import PlayerConnection
+
+REDIS_NAMESPACE = "deathwatch"
 
 
 class GameHost:
+
     def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool):
         self._ws_host = host
         self._ws_port = port
-        self.redis_pool = redis_pool
+        self._redis_pool = redis_pool
+
+        from game.net.player_connection import PlayerConnection
+        self._PlayerConnectionType = PlayerConnection
         self._ws_connections: Dict[str, PlayerConnection] = {}
 
     def run(self):
@@ -52,12 +57,19 @@ class GameHost:
 
         return loop
 
-    async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol) -> PlayerConnection:
+    async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol) -> 'PlayerConnection':
         session_token = secrets.token_urlsafe(64)
-        player_connection = PlayerConnection(
+        player_connection = self._PlayerConnectionType(
+            host=self,
             websocket=websocket,
             session_token=session_token
         )
         print(f"New connection! Session token: {session_token}")
         await player_connection.send(HandshakeReadyMessage())
         return player_connection
+
+    def namespaced(self, key):
+        return f"{REDIS_NAMESPACE}:{key}"
+
+    def redis(self):
+        return redis.Redis(connection_pool=self._redis_pool)

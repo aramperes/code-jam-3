@@ -41,7 +41,7 @@
   {
     "user": {
       "token": "<token>",
-      "name": "<name>"
+      "name": "<name>#<discrim>"
     }
   }
   ```
@@ -128,7 +128,7 @@
         "max_players": 2,
         "users": [
           {
-            "name": "<user name>",
+            "name": "<user_name>#<discrim>",
             "ready": false
           }
         ]
@@ -154,7 +154,7 @@
   
   ```json
   {
-    "user_name": "<user name>",
+    "user_name": "<user_name>#<discrim>",
     "message": "<message>"
   }
   ```
@@ -189,6 +189,6 @@
   
   ```json
   {
-    "user_name": "<user name>"
+    "user_name": "<user>#<discrim>"
   }
   ```
