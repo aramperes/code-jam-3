@@ -4,11 +4,12 @@ from typing import Dict
 
 import redis
 import websockets
+
 from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage
 
-REDIS_NAMESPACE = "deathwatch"
+_REDIS_NAMESPACE = "deathwatch"
 
 
 class GameHost:
@@ -69,7 +70,7 @@ class GameHost:
         return player_connection
 
     def namespaced(self, key):
-        return f"{REDIS_NAMESPACE}:{key}"
+        return f"{_REDIS_NAMESPACE}:{key}"
 
     def redis(self):
         return redis.Redis(connection_pool=self._redis_pool)

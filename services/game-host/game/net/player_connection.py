@@ -1,5 +1,6 @@
 import json
 import random
+import re
 import secrets
 
 import websockets
@@ -13,6 +14,12 @@ from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
 from game.net.message import InboundMessage, OutboundMessage
 from game.net.state import State
+
+_USERNAME_PATTERN = re.compile(r"^[\w]{2,}$")
+
+
+def username_valid(username: str) -> bool:
+    return bool(_USERNAME_PATTERN.fullmatch(username))
 
 
 class PlayerConnection:
@@ -35,29 +42,30 @@ class PlayerConnection:
         output = json.dumps(build)
         await self.websocket.send(output)
 
+    async def reject_authentication(self):
+        self._user_creation_transaction = secrets.token_urlsafe(32)
+        if self.state != state.HS_USER_PROMPTING:
+            self.upgrade(state.HS_USER_PROMPTING)
+        await self.send(
+            HandshakePromptNewUserMessage(
+                transaction_id=self._user_creation_transaction
+            )
+        )
+
     async def on_receive(self, message: InboundMessage):
         if self.state == state.HS_UNIDENTIFIED:
             if isinstance(message, HandshakeIdentifyMessage):
-                async def reject():
-                    self._user_creation_transaction = secrets.token_urlsafe(32)
-                    self.upgrade(state.HS_USER_PROMPTING)
-                    await self.send(
-                        HandshakePromptNewUserMessage(
-                            transaction_id=self._user_creation_transaction
-                        )
-                    )
-
                 message: HandshakeIdentifyMessage = message
                 token = message.token
                 redis = self.host.redis()
 
                 if not token or not isinstance(token, str) or not redis.exists(self.host.namespaced(f"token:{token}")):
-                    await reject()
+                    await self.reject_authentication()
                     return
 
                 name_with_discrim = redis.get(self.host.namespaced(f"token:{token}")).decode("utf-8")
                 if name_with_discrim.count("#") != 1:
-                    await reject()
+                    await self.reject_authentication()
                     return
 
                 self.user_name, self.user_discrim = name_with_discrim.split("#", maxsplit=1)
@@ -86,8 +94,10 @@ class PlayerConnection:
                     return
                 self._user_creation_transaction = None
 
-                # todo: validate/sanitize username
                 username = message.user_name
+                if not username_valid(username):
+                    await self.reject_authentication()
+                    return
 
                 redis = self.host.redis()
                 # Generate discriminator (between 0001 and 9999, inclusive)

@@ -62,6 +62,8 @@ class ExampleButtons(flx.Widget):
                 self.username_input.set_text("")
                 self.username_input.apply_style({"visibility": "visible"})
                 self.username_input_submit.apply_style({"visibility": "visible"})
+                self.username_input_submit.set_disabled(False)
+                self.username_input.set_disabled(False)
                 return
 
             if op == "handshake:user_info":
