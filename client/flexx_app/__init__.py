@@ -1,7 +1,7 @@
 from flexx import flx
 from pscript.stubs import JSON
 
-from flexx_app import ws
+from flexx_app import ws, storage
 
 
 class ExampleButtons(flx.Widget):
@@ -47,18 +47,32 @@ class ExampleButtons(flx.Widget):
             payload = frame["payload"]
 
             if op == "handshake:ready":
+                token = None
+                if storage.read_token() is not None:
+                    token = str(storage.read_token())
                 self.session_token = frame["session"]
-                self.send("handshake:identify", {"token": None})
+                self.send("handshake:identify", {"token": token})
                 self.status_label.set_text("Authenticating...")
                 return
 
             if op == "handshake:prompt_new_user":
                 self._username_prompt_transaction = payload["transaction_id"]
                 self.status_label.set_text("Please input a username:")
+                self.username_input.set_text("")
                 self.username_input.apply_style({"visibility": "visible"})
                 self.username_input_submit.apply_style({"visibility": "visible"})
                 return
-            pass
+
+            if op == "handshake:user_info":
+                username = payload["user"]["name"]
+                token = payload["user"]["token"]
+
+                storage.store_token(token)
+
+                self.username_input.apply_style({"visibility": "hidden"})
+                self.username_input_submit.apply_style({"visibility": "hidden"})
+                self.status_label.set_text("Welcome, " + username)
+                return
 
         return call
 

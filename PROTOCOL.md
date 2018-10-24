@@ -40,7 +40,7 @@
   ```json
   {
     "user": {
-      "id": "<id>",
+      "token": "<token>",
       "name": "<name>"
     }
   }

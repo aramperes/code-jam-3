@@ -54,7 +54,7 @@ class PlayerConnection:
                 self.upgrade(state.HS_IDENTIFIED)
                 await self.send(
                     HandshakeUserInfoMessage(
-                        user_id="abc",
+                        user_token="abc",
                         user_name="test"
                     )
                 )
