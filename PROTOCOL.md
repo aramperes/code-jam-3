@@ -71,7 +71,7 @@
 
 ## `lobby`
 
-### `c-s lobby:state`
+### `c-s lobby:set_state`
 
   **Payload**:
   
@@ -97,23 +97,43 @@
   }
   ```
 
+### `c-s lobby:create`
+
+  **Payload**:
+
+  ```json
+  {
+    "name": "<name>",
+    "max_players": 2
+  }
+  ```
+
 ### `s-c lobby:update_list`
 
   **Payload**:
   
   ```json
-  [
-    {
-      "lobby_id": "<id>",
-      "state": "open|closed",
-      "created_time": "<creation timestamp>",
-      "start_time": "<start timestamp | null>",
-      "users": ["user_a", "user_b"]
-    }
-  ]
+  {
+    "lobbies": [
+      {
+        "id": "<id>",
+        "name": "<name>",
+        "open": true,
+        "created_time": "<creation timestamp>",
+        "start_time": "<start timestamp | null>",
+        "max_players": 2,
+        "users": [
+          {
+            "name": "<user name>",
+            "ready": false
+          }
+        ]
+      }
+    ]
+  }
   ```
 
-### `s-c lobby:join_response`
+### `s-c lobby:response`
 
   **Payload**:
   
@@ -124,7 +144,7 @@
   }
   ```
 
-### `s-c lobby:chat_recv`
+### `s-c lobby:chat_broadcast`
 
   **Payload**:
   
@@ -142,5 +162,15 @@
   ```json
   {
     "message": "<message>"
+  }
+  ```
+  
+### `c-s lobby:user_ready`
+
+  **Payload**:
+  
+  ```json
+  {
+    "ready": true
   }
   ```
