@@ -43,7 +43,7 @@ class GameHost:
                     op_code = message.op
                     message = INBOUND_REGISTRY[op_code](data)
 
-                    connection.on_receive(message)
+                    await connection.on_receive(message)
                 except websockets.exceptions.ConnectionClosed:
                     print(f"Session died: {connection.session_token}")
                     del self._ws_connections[connection.session_token]
