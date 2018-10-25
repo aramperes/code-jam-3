@@ -10,16 +10,22 @@ class BaseWidget(flx.Widget):
     ws_url = event.StringProp("", doc="Websocket URL")
 
     def init(self):
-        self.client = Client(self.ws_url, self)
-        # # UI
-        # self.username_input = flx.LineEdit()
-        # self.username_input.apply_style({"visibility": "hidden"})
-        #
-        # self.username_input_submit = flx.Button(text='Submit')
-        # self.username_input_submit.apply_style({"visibility": "hidden"})
+        self.apply_style({
+            "width": "80%",
+            "max-width": "800px",
+            "padding-top": "50px",
+            "margin-left": "auto",
+            "margin-right": "auto"
+        })
 
-        # connect
+        self.game_title = flx.Label(text="- DeathWatch -", style={
+            "text-align": "center",
+            "width": "100%",
+            "font-size": "16pt"
+        })
         self.loading_info = LoadingInfoWidget(visible=True)
+
+        self.client = Client(self.ws_url, self)
 
     def set_loading_status(self, status):
         self.loading_info.set_status(status)
@@ -53,3 +59,7 @@ class BaseWidget(flx.Widget):
     def show_lobby_list(self):
         if not self.lobby_parent:
             self.lobby_parent = LobbyListParentWidget(parent=self, client=self.client)
+
+    def update_lobby_list(self, lobbies):
+        if self.lobby_parent:
+            self.lobby_parent.update_list(lobbies)

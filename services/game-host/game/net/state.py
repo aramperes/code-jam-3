@@ -19,3 +19,4 @@ HS_USER_PROMPTING = State(1, HS_UNIDENTIFIED)  # The user does not exist, and is
 HS_IDENTIFIED = State(2, HS_UNIDENTIFIED, HS_USER_PROMPTING)  # The client has identified the client
 
 LOBBY_INIT = State(3, HS_IDENTIFIED)  # The server has upgraded the connection to lobby, and is waiting for action
+LOBBY_LIST = State(4, LOBBY_INIT)  # The client is waiting for a list of lobbies

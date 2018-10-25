@@ -54,6 +54,12 @@ class Client:
             if op == "handshake:upgrade":
                 # show lobby
                 self.base.show_lobby_list()
-                pass
+                self.send("lobby:set_state", {
+                    "state": "list"
+                })
 
+            if op == "lobby:update_list":
+                # update lobby list
+                lobbies = payload["lobbies"]
+                self.base.update_lobby_list(lobbies)
         return call

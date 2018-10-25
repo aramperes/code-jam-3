@@ -6,7 +6,7 @@ import secrets
 import websockets
 
 from game import GameHost
-from game.net import state
+from game.net import state, LobbySetStateMessage
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
 from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
@@ -127,6 +127,13 @@ class PlayerConnection:
                 )
                 return
 
+        if self.state == state.LOBBY_INIT:
+            if isinstance(message, LobbySetStateMessage):
+                message: LobbySetStateMessage = message
+                if message.state == "list":
+                    self.upgrade(state.LOBBY_LIST)
+                    return
+
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
 
     @property
@@ -142,5 +149,11 @@ class PlayerConnection:
     def upgrade(self, new_state: State):
         if not new_state.can_upgrade_from(self.state):
             print(f"Failed to upgrade a connection, state={self.state} cannot upgrade to state={new_state}")
+            return
+        self._state = new_state
+
+    def downgrade(self, new_state: State):
+        if not self.state.can_upgrade_from(new_state):
+            print(f"Failed to downgrade a connection, state={self.state} cannot downgrade to state={new_state}")
             return
         self._state = new_state
