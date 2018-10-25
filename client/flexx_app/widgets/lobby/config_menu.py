@@ -42,3 +42,10 @@ class LobbyConfigMenuWidget(flx.Widget):
     def load_preset(self, name, players):
         self.name_field.set_text(name)
         self.playercount_field.set_text(players)
+
+    def set_disabled_all(self, disabled):
+        self.name_field.set_disabled(disabled)
+        self.playercount_field.set_disabled(disabled)
+        self.preset_button_1.set_disabled(disabled)
+        self.preset_button_2.set_disabled(disabled)
+        self.preset_button_3.set_disabled(disabled)

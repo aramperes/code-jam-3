@@ -66,7 +66,6 @@ class LobbyListParentWidget(flx.Widget):
             return lobby_obj["created_time"]
 
         cache = sorted(self.lobby_cache, key=_sort_key)
-        print(cache)
 
         for lobby_id in cache:
             lobby_obj = self.lobby_cache[lobby_id]
@@ -96,6 +95,17 @@ class LobbyListParentWidget(flx.Widget):
     @flx.reaction("create_cancel_button.pointer_click")
     def _create_cancel_button_handler(self, *events):
         self._cancel_create_menu()
+
+    @flx.reaction("create_confirm_button.pointer_click")
+    def _create_confirm_button_handler(self, *events):
+        self.create_menu.set_disabled_all(True)
+        self.create_confirm_button.set_disabled(True)
+        self.create_cancel_button.set_disabled(True)
+        self.client.send("lobby:config", {
+            "name": self.create_menu.name_field.text,
+            "max_players": int(self.create_menu.playercount_field.text),
+            "lobby_id": None
+        })
 
     @flx.reaction("create_button.pointer_click")
     def _list_create_button_handler(self, *events):
