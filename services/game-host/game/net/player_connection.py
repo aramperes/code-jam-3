@@ -13,10 +13,11 @@ from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
 from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
 from game.net.lobby.set_state import LobbySetStateMessage
+from game.net.lobby.update_list import LobbyUpdateListMessage
 from game.net.message import InboundMessage, OutboundMessage
 from game.net.state import State
 
-_USERNAME_PATTERN = re.compile(r"^[\w]{2,}$")
+_USERNAME_PATTERN = re.compile(r"^[\w]{2,15}$")
 
 
 def username_valid(username: str) -> bool:
@@ -133,6 +134,22 @@ class PlayerConnection:
                 message: LobbySetStateMessage = message
                 if message.state == "list":
                     self.upgrade(state.LOBBY_LIST)
+                    await self.send(LobbyUpdateListMessage(lobbies=[
+                        {
+                            "id": "1",
+                            "name": "cool room",
+                            "open": True,
+                            "created_time": 0,
+                            "start_time": None,
+                            "max_players": 2,
+                            "players": [
+                                {
+                                    "name": "notmomo#0001",
+                                    "ready": True
+                                }
+                            ]
+                        }
+                    ]))
                     return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")

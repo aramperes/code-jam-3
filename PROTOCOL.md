@@ -137,7 +137,7 @@
         "created_time": "<creation timestamp>",
         "start_time": "<start timestamp>|null",
         "max_players": 2,
-        "users": [
+        "players": [
           {
             "name": "<user_name>#<discrim>",
             "ready": false
