@@ -4,9 +4,8 @@ import re
 import secrets
 
 import websockets
-
 from game import GameHost
-from game.net import state
+from game.net import state as st
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
 from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
@@ -15,7 +14,6 @@ from game.net.handshake.user_info import HandshakeUserInfoMessage
 from game.net.lobby.set_state import LobbySetStateMessage
 from game.net.lobby.update_list import LobbyUpdateListMessage
 from game.net.message import InboundMessage, OutboundMessage
-from game.net.state import State
 
 _USERNAME_PATTERN = re.compile(r"^[\w]{2,15}$")
 
@@ -29,7 +27,7 @@ class PlayerConnection:
         self.host = host
         self.websocket = websocket
         self.session_token = session_token
-        self._state = state.HS_UNIDENTIFIED
+        self._state = st.HS_UNIDENTIFIED
         self._user_creation_transaction = None
 
         self.user_token: str = None
@@ -46,8 +44,8 @@ class PlayerConnection:
 
     async def reject_authentication(self):
         self._user_creation_transaction = secrets.token_urlsafe(32)
-        if self.state != state.HS_USER_PROMPTING:
-            self.upgrade(state.HS_USER_PROMPTING)
+        if self.state != st.HS_USER_PROMPTING:
+            self.upgrade(st.HS_USER_PROMPTING)
         await self.send(
             HandshakePromptNewUserMessage(
                 transaction_id=self._user_creation_transaction
@@ -55,7 +53,7 @@ class PlayerConnection:
         )
 
     async def on_receive(self, message: InboundMessage):
-        if self.state == state.HS_UNIDENTIFIED:
+        if self.state == st.HS_UNIDENTIFIED:
             if isinstance(message, HandshakeIdentifyMessage):
                 message: HandshakeIdentifyMessage = message
                 token = message.token
@@ -73,20 +71,20 @@ class PlayerConnection:
                 self.user_name, self.user_discrim = name_with_discrim.split("#", maxsplit=1)
                 self.user_token = token
 
-                self.upgrade(state.HS_IDENTIFIED)
+                self.upgrade(st.HS_IDENTIFIED)
                 await self.send(
                     HandshakeUserInfoMessage(
                         user_token=self.user_token,
                         user_name=self.name_with_discrim
                     )
                 )
-                self.upgrade(state.LOBBY_INIT)
+                self.upgrade(st.LOBBY_INIT)
                 await self.send(
                     HandshakeUpgradeMessage()
                 )
                 return
 
-        if self.state == state.HS_USER_PROMPTING:
+        if self.state == st.HS_USER_PROMPTING:
             if isinstance(message, HandshakeNewUserMessage):
                 message: HandshakeNewUserMessage = message
                 if not self._user_creation_transaction or message.transaction_id != self._user_creation_transaction:
@@ -116,24 +114,24 @@ class PlayerConnection:
                     .set(self.host.namespaced(f"token:{self.user_token}"), self.name_with_discrim) \
                     .execute()
 
-                self.upgrade(state.HS_IDENTIFIED)
+                self.upgrade(st.HS_IDENTIFIED)
                 await self.send(
                     HandshakeUserInfoMessage(
                         user_token=self.user_token,
                         user_name=self.name_with_discrim
                     )
                 )
-                self.upgrade(state.LOBBY_INIT)
+                self.upgrade(st.LOBBY_INIT)
                 await self.send(
                     HandshakeUpgradeMessage()
                 )
                 return
 
-        if self.state == state.LOBBY_INIT:
+        if self.state == st.LOBBY_INIT:
             if isinstance(message, LobbySetStateMessage):
                 message: LobbySetStateMessage = message
                 if message.state == "list":
-                    self.upgrade(state.LOBBY_LIST)
+                    self.upgrade(st.LOBBY_LIST)
                     await self.send(LobbyUpdateListMessage(lobbies=[
                         {
                             "id": "1",
@@ -164,13 +162,13 @@ class PlayerConnection:
             return None
         return f"{self.user_name}#{self.user_discrim}"
 
-    def upgrade(self, new_state: State):
+    def upgrade(self, new_state: st.State):
         if not new_state.can_upgrade_from(self.state):
             print(f"Failed to upgrade a connection, state={self.state} cannot upgrade to state={new_state}")
             return
         self._state = new_state
 
-    def downgrade(self, new_state: State):
+    def downgrade(self, new_state: st.State):
         if not self.state.can_upgrade_from(new_state):
             print(f"Failed to downgrade a connection, state={self.state} cannot downgrade to state={new_state}")
             return

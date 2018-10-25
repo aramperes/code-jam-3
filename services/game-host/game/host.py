@@ -4,7 +4,6 @@ from typing import Dict
 
 import redis
 import websockets
-
 from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage

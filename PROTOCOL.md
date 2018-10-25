@@ -82,14 +82,7 @@
     "state": "list"
   }
   ```
-  
-  ```json
-  {
-    "state": "view",
-    "lobby_id": "<lobby id>"
-  }
-  ```
-  
+
   ```json
   {
     "state": "join",

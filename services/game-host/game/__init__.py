@@ -1,7 +1,6 @@
 import os
 
 import redis
-
 from game.host import GameHost
 
 redis_pool = redis.ConnectionPool(

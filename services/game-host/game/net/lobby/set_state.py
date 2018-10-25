@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from game.net import InboundMessage
+from game.net.message import InboundMessage
 
 
 class LobbySetStateMessage(InboundMessage):
