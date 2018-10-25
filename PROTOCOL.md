@@ -112,6 +112,17 @@
   }
   ```
 
+### `s-c lobby:config_response`
+
+  **Payload**:
+
+  ```json
+  {
+    "lobby_id": "<lobby_id>|null",
+    "error": "<message>|null"
+  }
+  ```
+
 ### `s-c lobby:update_list`
 
   **Payload**:
@@ -136,8 +147,9 @@
     ]
   }
   ```
+  
 
-### `s-c lobby:response`
+### `s-c lobby:join_response`
 
   **Payload**:
   
