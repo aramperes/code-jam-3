@@ -6,12 +6,13 @@ import secrets
 import websockets
 
 from game import GameHost
-from game.net import state, LobbySetStateMessage
+from game.net import state
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
 from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
 from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
+from game.net.lobby.set_state import LobbySetStateMessage
 from game.net.message import InboundMessage, OutboundMessage
 from game.net.state import State
 
