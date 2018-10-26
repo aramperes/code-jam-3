@@ -70,6 +70,7 @@ class GameHost:
                     await connection.on_receive(message)
                 except websockets.exceptions.ConnectionClosed:
                     print(f"Session died: {connection.session_token}")
+                    connection.cleanup()
                     del self._ws_connections[connection.session_token]
                     break
 
@@ -107,12 +108,13 @@ class GameHost:
                     handler.func.__call__(message)
 
     def redis_channel_sub(self, channel: str, handler) -> RedisChannelReceipt:
-        receipt = RedisChannelReceipt(handler)
+        receipt = RedisChannelReceipt(handler, channel)
         self._redis_pubsub_connection.subscribe(channel)
         self._redis_channels[channel].add(receipt)
         return receipt
 
-    def redis_channel_unsub(self, channel: str, receipt: RedisChannelReceipt):
+    def redis_channel_unsub(self, receipt: RedisChannelReceipt):
+        channel = receipt.channel
         self._redis_channels[channel].remove(receipt)
         self._redis_pubsub_connection.unsubscribe(channel)
 

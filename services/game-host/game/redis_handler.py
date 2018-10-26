@@ -2,9 +2,10 @@ import random
 
 
 class RedisChannelReceipt:
-    def __init__(self, func):
+    def __init__(self, func, channel):
         self.func = func
         self.func_id = random.getrandbits(64)
+        self.channel = channel
 
     def call(self, *args, **kwargs):
         self.func(*args, **kwargs)

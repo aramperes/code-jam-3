@@ -208,6 +208,11 @@ class PlayerConnection:
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
 
+    def cleanup(self):
+        # session death
+        if self._handler_lobby_list is not None:
+            self.host.redis_channel_unsub(self._handler_lobby_list)
+
     @property
     def state(self):
         return self._state
