@@ -4,7 +4,7 @@ import secrets
 import uuid
 
 import websockets
-from game import GameHost
+from game import GameHost, channels
 from game.net import state as st, validator
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
@@ -16,8 +16,6 @@ from game.net.lobby.config_response import LobbyConfigResponseMessage
 from game.net.lobby.set_state import LobbySetStateMessage
 from game.net.lobby.update_list import LobbyUpdateListMessage
 from game.net.message import InboundMessage, OutboundMessage
-
-_CHANNEL_LOBBY_LIST = GameHost.namespaced("channel:lobby_list")
 
 
 class PlayerConnection:
@@ -32,7 +30,7 @@ class PlayerConnection:
         self.user_name: str = None
         self.user_discrim: str = None
 
-        self._handler_lobby_list = host.redis_channel_sub(_CHANNEL_LOBBY_LIST,
+        self._handler_lobby_list = host.redis_channel_sub(channels.CHANNEL_LOBBY_LIST,
                                                           lambda x: print("Received lobby update: " + str(x)))
 
     async def send(self, message: OutboundMessage):
@@ -176,7 +174,7 @@ class PlayerConnection:
                 lobby_id = str(uuid.uuid4())
 
                 # todo: proper lobby encoder
-                self.host.redis().publish(_CHANNEL_LOBBY_LIST, json.dumps({
+                self.host.redis().publish(channels.CHANNEL_LOBBY_LIST, json.dumps({
                     "lobby_id": lobby_id,
                     "name": lobby_name,
                     "max_players": max_players
