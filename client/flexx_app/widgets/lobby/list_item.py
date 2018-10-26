@@ -10,16 +10,23 @@ class LobbyListElementWidget(flx.Widget):
     def init(self):
         self.client = self.list_parent.client
         self.apply_style({
-            "border": "solid 1px gray",
-            "padding": "10px"
+            "display": "flex",
+            "justify-content": "space-between"
         })
 
-        self.lobby_name_field = flx.Label()
-        self.lobby_players_field = flx.Label(style={
-            "font-size": "10pt",
-            "min-height": "0px"
-        })
+        with flx.Widget():
+            self.apply_style({
+                "border": "solid 1px gray",
+                "padding": "10px"
+            })
 
+            self.lobby_name_field = flx.Label()
+            self.lobby_players_field = flx.Label(style={
+                "font-size": "10pt",
+                "min-height": "0px"
+            })
+
+        self.join_button = flx.Button(text="Join")
         self.update_lobby(self.lobby)
 
     def update_lobby(self, lobby):
@@ -35,3 +42,7 @@ class LobbyListElementWidget(flx.Widget):
             "Players (" + str(len(lobby["players"])) + "/" + str(lobby["max_players"]) + "): " + ", ".join(
                 [user.name for user in lobby["players"]])
         )
+
+    @flx.reaction("join_button.pointer_click")
+    def _join_button_pointer_click(self, *events):
+        print("Joining", self.lobby["id"])
