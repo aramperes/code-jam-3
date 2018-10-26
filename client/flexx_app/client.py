@@ -13,7 +13,7 @@ class Client:
         self.socket = ws.create_websocket_connection(ws_url, self._ws_callback())
 
     def send(self, op, payload):
-        print(" < " + op)
+        print(" < " + op + " " + JSON.stringify(payload))
         self.socket.send(JSON.stringify({
             "op": op,
             "session": self.session_token,

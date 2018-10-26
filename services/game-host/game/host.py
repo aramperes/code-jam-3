@@ -1,5 +1,10 @@
 import asyncio
 import secrets
+import signal
+import sys
+from collections import defaultdict
+from queue import Queue
+from threading import Thread
 from typing import Dict
 
 import redis
@@ -7,6 +12,7 @@ import websockets
 from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage
+from game.redis_handler import RedisChannelReceipt
 
 _REDIS_NAMESPACE = "deathwatch"
 
@@ -22,20 +28,31 @@ class GameHost:
         self._PlayerConnectionType = PlayerConnection
         self._ws_connections: Dict[str, PlayerConnection] = {}
 
+        self._redis_async_loop = None
+        self._ws_async_loop = None
+
+        self._redis_thread_kill_queue = Queue()
+        self._signal_handler()
+
+        self._redis_channels = defaultdict(set)
+        self._redis_pubsub_connection = None
+
     def run(self):
+        self._init_redis_pubsub()
+        print("Done")
         self._init_websocket_server()
 
     def _init_websocket_server(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(
+        self._ws_async_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._ws_async_loop)
+        self._ws_async_loop.run_until_complete(
             websockets.serve(
                 self._ws_loop(),
                 host=self._ws_host,
                 port=self._ws_port
             )
         )
-        loop.run_forever()
+        self._ws_async_loop.run_forever()
 
     def _ws_loop(self):
         async def loop(websocket: websockets.WebSocketServerProtocol, path):
@@ -68,8 +85,47 @@ class GameHost:
         await player_connection.send(HandshakeReadyMessage())
         return player_connection
 
-    def namespaced(self, key):
-        return f"{_REDIS_NAMESPACE}:{key}"
+    def _init_redis_pubsub(self):
+        thread = Thread(target=self._redis_pubsub_loop)
+        thread.start()
+
+    def _redis_pubsub_loop(self):
+        redis_connection = self.redis()
+        self._redis_pubsub_connection = redis_connection.pubsub()
+        self._redis_pubsub_connection.subscribe(self.namespaced("channel:dummy"))
+
+        self.redis_channel_sub(self.namespaced("channel:dummy"), lambda msg: print(msg))
+
+        while self._redis_thread_kill_queue.empty():
+            message = self._redis_pubsub_connection.get_message(timeout=0.05)
+            if not message:
+                continue
+            channel = message["channel"].decode("utf-8")
+            for handler in self._redis_channels[channel]:
+                handler: RedisChannelReceipt = handler
+                handler.func(message)
+
+    def redis_channel_sub(self, channel: str, handler) -> RedisChannelReceipt:
+        receipt = RedisChannelReceipt(handler)
+        self._redis_pubsub_connection.subscribe(channel)
+        self._redis_channels[channel].add(receipt)
+        return receipt
+
+    def redis_channel_unsub(self, channel: str, receipt: RedisChannelReceipt):
+        self._redis_channels[channel].remove(receipt)
+        self._redis_pubsub_connection.unsubscribe(channel)
+
+    def _signal_handler(self):
+        def handler(*args):
+            self._redis_thread_kill_queue.put(0)
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGTERM, handler)
 
     def redis(self):
         return redis.Redis(connection_pool=self._redis_pool)
+
+    @staticmethod
+    def namespaced(key):
+        return f"{_REDIS_NAMESPACE}:{key}"

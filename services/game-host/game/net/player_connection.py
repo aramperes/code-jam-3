@@ -1,25 +1,23 @@
 import json
 import random
-import re
 import secrets
+import uuid
 
 import websockets
 from game import GameHost
-from game.net import state as st
+from game.net import state as st, validator
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
 from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
 from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
+from game.net.lobby.config import LobbyConfigMessage
+from game.net.lobby.config_response import LobbyConfigResponseMessage
 from game.net.lobby.set_state import LobbySetStateMessage
 from game.net.lobby.update_list import LobbyUpdateListMessage
 from game.net.message import InboundMessage, OutboundMessage
 
-_USERNAME_PATTERN = re.compile(r"^[\w]{2,15}$")
-
-
-def username_valid(username: str) -> bool:
-    return bool(_USERNAME_PATTERN.fullmatch(username))
+_CHANNEL_LOBBY_LIST = GameHost.namespaced("channel:lobby_list")
 
 
 class PlayerConnection:
@@ -33,6 +31,9 @@ class PlayerConnection:
         self.user_token: str = None
         self.user_name: str = None
         self.user_discrim: str = None
+
+        self._handler_lobby_list = host.redis_channel_sub(_CHANNEL_LOBBY_LIST,
+                                                          lambda x: print("Received lobby update: " + str(x)))
 
     async def send(self, message: OutboundMessage):
         if self.websocket.closed:
@@ -95,7 +96,7 @@ class PlayerConnection:
                 self._user_creation_transaction = None
 
                 username = message.user_name
-                if not username_valid(username):
+                if not validator.username_valid(username):
                     await self.reject_authentication()
                     return
 
@@ -149,6 +150,38 @@ class PlayerConnection:
                         }
                     ]))
                     return
+
+        if self.state == st.LOBBY_LIST or self.state == st.LOBBY_LIST:
+            if isinstance(message, LobbyConfigMessage):
+                # Lobby CREATE request
+                message: LobbyConfigMessage = message
+
+                lobby_name = message.name
+                if not lobby_name:
+                    return
+                lobby_name = lobby_name.strip()
+                if not validator.lobby_name_valid(lobby_name):
+                    await self.send(
+                        LobbyConfigResponseMessage(error="Invalid lobby name.")
+                    )
+                    return
+
+                max_players = message.max_players
+                if not isinstance(max_players, int) or 3 < max_players < 1:
+                    await self.send(
+                        LobbyConfigResponseMessage(error="Invalid player count, must be between 1 and 3 players.")
+                    )
+                    return
+
+                lobby_id = str(uuid.uuid4())
+
+                # todo: proper lobby encoder
+                self.host.redis().publish(_CHANNEL_LOBBY_LIST, json.dumps({
+                    "lobby_id": lobby_id,
+                    "name": lobby_name,
+                    "max_players": max_players
+                }))
+                return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
 
