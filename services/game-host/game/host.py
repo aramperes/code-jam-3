@@ -74,7 +74,7 @@ class GameHost:
 
         return loop
 
-    async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol) -> 'PlayerConnection':
+    async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol):
         session_token = secrets.token_urlsafe(64)
         player_connection = self._PlayerConnectionType(
             host=self,
