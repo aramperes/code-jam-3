@@ -36,7 +36,10 @@ class LobbyListParentWidget(flx.Widget):
             "border-top": "none",
             "padding": "10px"
         }) as self.menu_container:
-            with flx.Widget() as self.lobby_list_container:
+            with flx.Widget(style={
+                "display": "grid",
+                "grid-gap": "10px"
+            }) as self.lobby_list_container:
                 self.lobby_list_loading = flx.Label(text="Searching for lobbies...",
                                                     style={"text-align": "center",
                                                            "font-style": "italic",
@@ -57,7 +60,7 @@ class LobbyListParentWidget(flx.Widget):
         self.create_action_button_group.apply_style({"display": "none"})
         self.lobby_title.set_text("Lobbies")
         self.title_username.apply_style({"display": "block"})
-        self.lobby_list_container.apply_style({"display": "block"})
+        self.lobby_list_container.apply_style({"display": "grid"})
 
         self.create_menu.dispose()
 
