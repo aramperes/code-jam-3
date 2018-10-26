@@ -1,10 +1,14 @@
+from flexx import flx
 from pscript.stubs import JSON
 
 from flexx_app import ws, storage, timer
 
 
-class Client:
-    def __init__(self, ws_url, base):
+class Client(flx.Component):
+    lobby_join_request = flx.AnyProp()
+
+    def __init__(self, ws_url, base, *init_args, **property_values):
+        super().__init__(*init_args, **property_values)
         self.base = base
         # props
         self.session_token = None
@@ -63,11 +67,13 @@ class Client:
                 self.send("lobby:set_state", {
                     "state": "list"
                 })
+                return
 
             if op == "lobby:update_list":
                 # update lobby list
                 lobbies = payload["lobbies"]
                 self.base.update_lobby_list(lobbies)
+                return
 
             if op == "lobby:config_response":
                 # if there is an error, show error
@@ -78,4 +84,30 @@ class Client:
                     self.base.lobby_config_show_error(error)
                 else:
                     self.base.lobby_config_success(lobby_id)
+                return
+
+            if op == "lobby:join_response":
+                joined = payload["joined"]
+                lobby_id = payload["lobby_id"]
+
+                if self.lobby_join_request != lobby_id:
+                    return
+
+                if joined:
+                    # todo: show lobby UI
+                    pass
+                else:
+                    self.set_lobby_join_request(None)
+
         return call
+
+    # Function can't have both action and emitter. Go figure.
+
+    @flx.action
+    def set_lobby_join_request(self, lobby_id):
+        self._mutate_lobby_join_request(lobby_id)
+        self.lobby_join_request_update(lobby_id)
+
+    @flx.emitter
+    def lobby_join_request_update(self, new_lobby):
+        return dict(new_lobby=new_lobby)

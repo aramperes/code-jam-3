@@ -17,6 +17,7 @@ from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
 from game.net.lobby.config import LobbyConfigMessage
 from game.net.lobby.config_response import LobbyConfigResponseMessage
+from game.net.lobby.join_response import LobbyJoinResponseMessage
 from game.net.lobby.set_state import LobbySetStateMessage
 from game.net.lobby.update_list import LobbyUpdateListMessage
 from game.net.message import InboundMessage, OutboundMessage
@@ -154,7 +155,7 @@ class PlayerConnection:
                     await self.send(LobbyUpdateListMessage(lobbies=response_lobbies))
                     return
 
-        if self.state == st.LOBBY_LIST or self.state == st.LOBBY_LIST:
+        if self.state == st.LOBBY_LIST or self.state == st.LOBBY_INIT:
             if isinstance(message, LobbyConfigMessage):
                 # Lobby CREATE request
                 message: LobbyConfigMessage = message
@@ -206,6 +207,19 @@ class PlayerConnection:
                 )
                 self._current_lobby_id = lobby_id
                 self.upgrade(st.LOBBY_VIEW)
+                return
+
+            if isinstance(message, LobbySetStateMessage):
+                # Lobby JOIN request
+                message: LobbySetStateMessage = message
+                if message.lobby_id is None:
+                    return
+                lobby_id = message.lobby_id
+                # todo: actually check and join
+                # deny for now
+                await self.send(
+                    LobbyJoinResponseMessage(lobby_id=lobby_id, joined=False)
+                )
                 return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")

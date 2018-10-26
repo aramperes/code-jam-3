@@ -89,7 +89,7 @@ class LobbyListParentWidget(flx.Widget):
             else:
                 # new lobby! make a widget
                 lobby_widget = LobbyListElementWidget(parent=self.lobby_list_container, list_parent=self,
-                                                      lobby=lobby_obj)
+                                                      lobby=lobby_obj, client=self.client)
                 self.lobby_cache[lobby_obj["id"]]["_widget"] = lobby_widget
                 if self.lobby_list_loading:
                     self.lobby_list_loading.dispose()
