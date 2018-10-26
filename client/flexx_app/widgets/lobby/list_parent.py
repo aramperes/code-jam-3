@@ -183,11 +183,11 @@ class LobbyListParentWidget(flx.Widget):
         if event is None:
             return
         lobby_id = event["lobby_id"]
-        print("Showing UI for ", lobby_id)
         self._cancel_create_menu()
         self._hide_list_ui()
         self._show_view_ui(lobby_id)
 
     @flx.reaction("client.on_lobby_leave")
     def _on_lobby_leave(self, *events):
+        # todo
         print("Going back to lobby list")

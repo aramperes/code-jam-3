@@ -100,9 +100,6 @@ class Client(flx.Component):
 
                 if joined:
                     self.__set_current_lobby_id(lobby_id)
-                    # todo: show lobby UI
-                    print("Joined", lobby_id)
-                    pass
 
                 # Clear the request
                 self.set_lobby_join_request(None)
@@ -122,6 +119,10 @@ class Client(flx.Component):
     def lobby_list_update(self, lobbies):
         return dict(lobbies=lobbies)
 
+    @flx.emitter
+    def current_lobby_update(self, lobby_obj):
+        return dict(lobby_obj=lobby_obj)
+
     @flx.action
     def __set_current_lobby_id(self, lobby_id):
         self._mutate_current_lobby_id(lobby_id)
@@ -137,3 +138,15 @@ class Client(flx.Component):
     @flx.emitter
     def on_lobby_leave(self):
         return dict()
+
+    @flx.reaction("lobby_list_update")
+    def __on_lobby_list_update_current(self, *events):
+        event = events[-1]
+        if not event:
+            return
+        lobbies = event["lobbies"]
+        if lobbies and self.current_lobby_id:
+            for lobby_obj in lobbies:
+                if lobby_obj["id"] == self.current_lobby_id:
+                    self.current_lobby_update(lobby_obj)
+                    break
