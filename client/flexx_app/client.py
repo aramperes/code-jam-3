@@ -91,13 +91,16 @@ class Client(flx.Component):
                 lobby_id = payload["lobby_id"]
 
                 if self.lobby_join_request != lobby_id:
+                    # Different request
                     return
 
                 if joined:
                     # todo: show lobby UI
+                    print("Joined", lobby_id)
                     pass
-                else:
-                    self.set_lobby_join_request(None)
+
+                # Clear the request
+                self.set_lobby_join_request(None)
 
         return call
 

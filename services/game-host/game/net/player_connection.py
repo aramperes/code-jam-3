@@ -190,13 +190,8 @@ class PlayerConnection:
                         LobbyUser(name=self.name_with_discrim, ready=False)
                     ]
                 )
-                lobby_state_json = json.dumps(lobby_state.serialize())
-
                 # Set in redis and notify the lobby list channel
-                self.host.redis().pipeline() \
-                    .set(namespaced(f"lobby:{lobby_id}"), lobby_state_json) \
-                    .publish(channels.CHANNEL_LOBBY_LIST, lobby_state_json) \
-                    .execute()
+                self._edit_and_publish_lobby_state(lobby_state)
 
                 # Notify client that the lobby was created
                 await self.send(
@@ -215,10 +210,28 @@ class PlayerConnection:
                 if message.lobby_id is None:
                     return
                 lobby_id = message.lobby_id
-                # todo: actually check and join
-                # deny for now
+                lobby_state_json = self.host.redis().get(namespaced(f"lobby:{lobby_id}"))
+                if lobby_state_json is None:
+                    await self.send(
+                        LobbyJoinResponseMessage(lobby_id=lobby_id, joined=False)
+                    )
+                    return
+
+                # parse lobby
+                lobby_state_json = lobby_state_json.decode("utf-8")
+                lobby_state = LobbyState.deserialize(json.loads(lobby_state_json))
+                if not lobby_state.is_open:
+                    await self.send(
+                        LobbyJoinResponseMessage(lobby_id=lobby_id, joined=False)
+                    )
+                    return
+
+                # add player to list
+                lobby_state.players.append(LobbyUser(name=self.name_with_discrim, ready=False))
+                self._edit_and_publish_lobby_state(lobby_state)
+                self.upgrade(st.LOBBY_VIEW)
                 await self.send(
-                    LobbyJoinResponseMessage(lobby_id=lobby_id, joined=False)
+                    LobbyJoinResponseMessage(lobby_id=lobby_id, joined=True)
                 )
                 return
 
@@ -249,12 +262,8 @@ class PlayerConnection:
                 lambda player: player.name != self.name_with_discrim,
                 lobby_state.players
             ))
-            lobby_state_json = json.dumps(lobby_state.serialize())
             # Send to redis and notify
-            self.host.redis().pipeline() \
-                .set(namespaced(f"lobby:{lobby_id}"), lobby_state_json) \
-                .publish(channels.CHANNEL_LOBBY_LIST, lobby_state_json) \
-                .execute()
+            self._edit_and_publish_lobby_state(lobby_state)
 
     @property
     def state(self):
@@ -303,3 +312,11 @@ class PlayerConnection:
             )
 
         return _handler
+
+    def _edit_and_publish_lobby_state(self, lobby: LobbyState):
+        lobby_state_json = json.dumps(lobby.serialize())
+        # Send to redis and notify
+        self.host.redis().pipeline() \
+            .set(namespaced(f"lobby:{lobby.lobby_id}"), lobby_state_json) \
+            .publish(channels.CHANNEL_LOBBY_LIST, lobby_state_json) \
+            .execute()
