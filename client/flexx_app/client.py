@@ -6,6 +6,7 @@ from flexx_app import ws, storage, timer
 
 class Client(flx.Component):
     lobby_join_request = flx.AnyProp()
+    current_lobby_id = flx.AnyProp()
 
     def __init__(self, ws_url, base, *init_args, **property_values):
         super().__init__(*init_args, **property_values)
@@ -72,7 +73,7 @@ class Client(flx.Component):
             if op == "lobby:update_list":
                 # update lobby list
                 lobbies = payload["lobbies"]
-                self.base.update_lobby_list(lobbies)
+                self.lobby_list_update(lobbies)
                 return
 
             if op == "lobby:config_response":
@@ -83,7 +84,10 @@ class Client(flx.Component):
                 if bool(error) or lobby_id is None:
                     self.base.lobby_config_show_error(error)
                 else:
+                    is_new_lobby = self.current_lobby_id is None
                     self.base.lobby_config_success(lobby_id)
+                    if is_new_lobby:
+                        self.__set_current_lobby_id(lobby_id)
                 return
 
             if op == "lobby:join_response":
@@ -95,6 +99,7 @@ class Client(flx.Component):
                     return
 
                 if joined:
+                    self.__set_current_lobby_id(lobby_id)
                     # todo: show lobby UI
                     print("Joined", lobby_id)
                     pass
@@ -104,8 +109,6 @@ class Client(flx.Component):
 
         return call
 
-    # Function can't have both action and emitter. Go figure.
-
     @flx.action
     def set_lobby_join_request(self, lobby_id):
         self._mutate_lobby_join_request(lobby_id)
@@ -114,3 +117,23 @@ class Client(flx.Component):
     @flx.emitter
     def lobby_join_request_update(self, new_lobby):
         return dict(new_lobby=new_lobby)
+
+    @flx.emitter
+    def lobby_list_update(self, lobbies):
+        return dict(lobbies=lobbies)
+
+    @flx.action
+    def __set_current_lobby_id(self, lobby_id):
+        self._mutate_current_lobby_id(lobby_id)
+        if lobby_id is not None:
+            self.on_lobby_join(lobby_id)
+        else:
+            self.on_lobby_leave(lobby_id)
+
+    @flx.emitter
+    def on_lobby_join(self, lobby_id):
+        return dict(lobby_id=lobby_id)
+
+    @flx.emitter
+    def on_lobby_leave(self):
+        return dict()

@@ -2,6 +2,7 @@ from flexx import flx
 
 from flexx_app.widgets.lobby.config_menu import LobbyConfigMenuWidget
 from flexx_app.widgets.lobby.list_item import LobbyListElementWidget
+from flexx_app.widgets.lobby.view import LobbyViewWidget
 
 
 class LobbyListParentWidget(flx.Widget):
@@ -47,22 +48,40 @@ class LobbyListParentWidget(flx.Widget):
                                                            "padding": "15px"})
 
     def _open_create_menu(self):
-        self.list_action_button_group.apply_style({"display": "none"})
         self.create_action_button_group.apply_style({"display": "block"})
         self.lobby_title.set_text("Create new lobby")
-        self.title_username.apply_style({"display": "none"})
-        self.lobby_list_container.apply_style({"display": "none"})
 
         self.create_menu = LobbyConfigMenuWidget(parent=self.menu_container, client=self.client)
 
     def _cancel_create_menu(self):
-        self.list_action_button_group.apply_style({"display": "block"})
+        if not self.create_menu:
+            return
         self.create_action_button_group.apply_style({"display": "none"})
+        self.create_menu.dispose()
+        self.create_menu = None
+
+    def _show_list_ui(self):
+        self.list_action_button_group.apply_style({"display": "block"})
         self.lobby_title.set_text("Lobbies")
         self.title_username.apply_style({"display": "block"})
         self.lobby_list_container.apply_style({"display": "grid"})
 
-        self.create_menu.dispose()
+    def _hide_list_ui(self):
+        self.list_action_button_group.apply_style({"display": "none"})
+        self.title_username.apply_style({"display": "none"})
+        self.lobby_list_container.apply_style({"display": "none"})
+
+    def _show_view_ui(self, lobby_id):
+        lobby_obj = self.lobby_cache.get(lobby_id)
+        if lobby_obj is not None:
+            self.lobby_title.set_text("\"" + lobby_obj["name"] + "\"")
+        self.lobby_view = LobbyViewWidget(client=self.client, lobby_id=lobby_id, parent=self.menu_container)
+
+    def _close_view_ui(self):
+        if not self.lobby_view:
+            return
+        self.lobby_view.dispose()
+        self.lobby_view = None
 
     def _populate_lobby_list(self):
         def _sort_key(lobby_obj):
@@ -98,6 +117,7 @@ class LobbyListParentWidget(flx.Widget):
     @flx.reaction("create_cancel_button.pointer_click")
     def _create_cancel_button_handler(self, *events):
         self._cancel_create_menu()
+        self._show_list_ui()
 
     @flx.reaction("create_confirm_button.pointer_click")
     def _create_confirm_button_handler(self, *events):
@@ -110,6 +130,7 @@ class LobbyListParentWidget(flx.Widget):
 
     @flx.reaction("create_button.pointer_click")
     def _list_create_button_handler(self, *events):
+        self._hide_list_ui()
         self._open_create_menu()
 
     def config_show_error(self, error):
@@ -122,15 +143,19 @@ class LobbyListParentWidget(flx.Widget):
         self._create_buttons_disabled(False)
 
     def confirm_config_edit(self, lobby_id):
-        # todo
-        pass
+        self._cancel_create_menu()
 
     def _create_buttons_disabled(self, disabled):
         self.create_confirm_button.set_disabled(disabled)
         self.create_cancel_button.set_disabled(disabled)
         self.create_menu.set_disabled_all(disabled)
 
-    def update_list(self, lobbies):
+    @flx.reaction("client.lobby_list_update")
+    def _on_update_list(self, *events):
+        event = events[-1]
+        if event is None:
+            return
+        lobbies = event["lobbies"]
         if len(lobbies) == 0:
             return
 
@@ -143,3 +168,18 @@ class LobbyListParentWidget(flx.Widget):
                 self.lobby_cache[lobby_obj_remote["id"]] = lobby_obj_remote
 
         self._populate_lobby_list()
+
+    @flx.reaction("client.on_lobby_join")
+    def _on_lobby_join(self, *events):
+        event = events[-1]
+        if event is None:
+            return
+        lobby_id = event["lobby_id"]
+        print("Showing UI for ", lobby_id)
+        self._cancel_create_menu()
+        self._hide_list_ui()
+        self._show_view_ui(lobby_id)
+
+    @flx.reaction("client.on_lobby_leave")
+    def _on_lobby_leave(self, *events):
+        print("Going back to lobby list")
