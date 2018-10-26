@@ -25,7 +25,7 @@ class LobbyListParentWidget(flx.Widget):
                 self.title_username = flx.Label(html="Welcome, <strong>" + self.client.username + "</strong>",
                                                 style={"font-size": "10pt", "min-height": "0px"})
             with flx.Widget() as self.list_action_button_group:
-                self.join_directly_button = flx.Button(text="Join directly...")
+                # self.join_directly_button = flx.Button(text="Join directly...")
                 self.create_button = flx.Button(text="Create")
 
             with flx.Widget(style={"display": "none"}) as self.create_action_button_group:
@@ -73,9 +73,9 @@ class LobbyListParentWidget(flx.Widget):
 
     def _show_view_ui(self, lobby_id):
         lobby_obj = self.lobby_cache.get(lobby_id)
-        if lobby_obj is not None:
-            self.lobby_title.set_text("\"" + lobby_obj["name"] + "\"")
-        self.lobby_view = LobbyViewWidget(client=self.client, lobby_id=lobby_id, parent=self.menu_container)
+        self.lobby_view = LobbyViewWidget(client=self.client, lobby_id=lobby_id, parent=self.menu_container,
+                                          cached_lobby_obj=lobby_obj)
+        self._update_view_lobby_title()
 
     def _close_view_ui(self):
         if not self.lobby_view:
@@ -150,6 +150,13 @@ class LobbyListParentWidget(flx.Widget):
         self.create_cancel_button.set_disabled(disabled)
         self.create_menu.set_disabled_all(disabled)
 
+    def _update_view_lobby_title(self):
+        if not self.lobby_view:
+            return
+
+        if self.lobby_cache.get(self.client.current_lobby_id):
+            self.lobby_title.set_text("\"" + self.lobby_cache.get(self.client.current_lobby_id)["name"] + "\"")
+
     @flx.reaction("client.lobby_list_update")
     def _on_update_list(self, *events):
         event = events[-1]
@@ -168,6 +175,7 @@ class LobbyListParentWidget(flx.Widget):
                 self.lobby_cache[lobby_obj_remote["id"]] = lobby_obj_remote
 
         self._populate_lobby_list()
+        self._update_view_lobby_title()
 
     @flx.reaction("client.on_lobby_join")
     def _on_lobby_join(self, *events):

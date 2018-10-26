@@ -229,10 +229,11 @@ class PlayerConnection:
                 # add player to list
                 lobby_state.players.append(LobbyUser(name=self.name_with_discrim, ready=False))
                 self._edit_and_publish_lobby_state(lobby_state)
-                self.upgrade(st.LOBBY_VIEW)
                 await self.send(
                     LobbyJoinResponseMessage(lobby_id=lobby_id, joined=True)
                 )
+                self.upgrade(st.LOBBY_VIEW)
+                self._current_lobby_id = lobby_id
                 return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
