@@ -27,6 +27,13 @@ class LobbyConfigMenuWidget(flx.Widget):
                 flx.Label(text="Players (1-3):")
                 self.playercount_field = flx.LineEdit()
 
+        with flx.Widget(style={
+            "text-align": "center",
+            "margin-top": "20px",
+            "font-style": "italic"
+        }):
+            self.error_label = flx.Label(text="Lobby name must be between 2 and 35 characters.")
+
     @flx.reaction("preset_button_1.pointer_click")
     def _preset_button_1_handler(self, *events):
         self.load_preset(self.client.username + "'s solo game", "1")

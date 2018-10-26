@@ -98,9 +98,7 @@ class LobbyListParentWidget(flx.Widget):
 
     @flx.reaction("create_confirm_button.pointer_click")
     def _create_confirm_button_handler(self, *events):
-        self.create_menu.set_disabled_all(True)
-        self.create_confirm_button.set_disabled(True)
-        self.create_cancel_button.set_disabled(True)
+        self._create_buttons_disabled(True)
         self.client.send("lobby:config", {
             "name": self.create_menu.name_field.text,
             "max_players": int(self.create_menu.playercount_field.text),
@@ -110,6 +108,24 @@ class LobbyListParentWidget(flx.Widget):
     @flx.reaction("create_button.pointer_click")
     def _list_create_button_handler(self, *events):
         self._open_create_menu()
+
+    def config_show_error(self, error):
+        if error:
+            self.create_menu.error_label.set_text("Error: " + str(error))
+        else:
+            self.create_menu.error_label.set_text("Error: could not create lobby.")
+
+        self.create_menu.error_label.apply_style({"color": "red"})
+        self._create_buttons_disabled(False)
+
+    def confirm_config_edit(self, lobby_id):
+        # todo
+        pass
+
+    def _create_buttons_disabled(self, disabled):
+        self.create_confirm_button.set_disabled(disabled)
+        self.create_cancel_button.set_disabled(disabled)
+        self.create_menu.set_disabled_all(disabled)
 
     def update_list(self, lobbies):
         if len(lobbies) == 0:

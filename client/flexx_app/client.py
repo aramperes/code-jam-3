@@ -62,4 +62,14 @@ class Client:
                 # update lobby list
                 lobbies = payload["lobbies"]
                 self.base.update_lobby_list(lobbies)
+
+            if op == "lobby:config_response":
+                # if there is an error, show error
+                # if no error, show lobby view
+                error = payload["error"]
+                lobby_id = payload["lobby_id"]
+                if bool(error) or lobby_id is None:
+                    self.base.lobby_config_show_error(error)
+                else:
+                    self.base.lobby_config_success(lobby_id)
         return call

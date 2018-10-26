@@ -63,3 +63,11 @@ class BaseWidget(flx.Widget):
     def update_lobby_list(self, lobbies):
         if self.lobby_parent:
             self.lobby_parent.update_list(lobbies)
+
+    def lobby_config_show_error(self, error):
+        if self.lobby_parent:
+            self.lobby_parent.config_show_error(error)
+
+    def lobby_config_success(self, lobby_id):
+        if self.lobby_parent:
+            self.lobby_parent.confirm_config_edit(lobby_id)
