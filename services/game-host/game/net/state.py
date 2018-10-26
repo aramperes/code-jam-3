@@ -20,3 +20,4 @@ HS_IDENTIFIED = State(2, HS_UNIDENTIFIED, HS_USER_PROMPTING)  # The client has i
 
 LOBBY_INIT = State(3, HS_IDENTIFIED)  # The server has upgraded the connection to lobby, and is waiting for action
 LOBBY_LIST = State(4, LOBBY_INIT)  # The client is waiting for a list of lobbies
+LOBBY_VIEW = State(5, LOBBY_INIT, LOBBY_LIST)  # The client is in a lobby

@@ -1,10 +1,14 @@
+import asyncio
 import json
 import random
 import secrets
+import time
 import uuid
 
 import websockets
 from game import GameHost, channels
+from game.lobby import LobbyState, LobbyUser
+from game.namespace import namespaced
 from game.net import state as st, validator
 from game.net.handshake.identify import HandshakeIdentifyMessage
 from game.net.handshake.new_user import HandshakeNewUserMessage
@@ -30,8 +34,7 @@ class PlayerConnection:
         self.user_name: str = None
         self.user_discrim: str = None
 
-        self._handler_lobby_list = host.redis_channel_sub(channels.CHANNEL_LOBBY_LIST,
-                                                          lambda x: print("Received lobby update: " + str(x)))
+        self._handler_lobby_list = None
 
     async def send(self, message: OutboundMessage):
         if self.websocket.closed:
@@ -58,11 +61,11 @@ class PlayerConnection:
                 token = message.token
                 redis = self.host.redis()
 
-                if not token or not isinstance(token, str) or not redis.exists(self.host.namespaced(f"token:{token}")):
+                if not token or not isinstance(token, str) or not redis.exists(namespaced(f"token:{token}")):
                     await self.reject_authentication()
                     return
 
-                name_with_discrim = redis.get(self.host.namespaced(f"token:{token}")).decode("utf-8")
+                name_with_discrim = redis.get(namespaced(f"token:{token}")).decode("utf-8")
                 if name_with_discrim.count("#") != 1:
                     await self.reject_authentication()
                     return
@@ -102,15 +105,15 @@ class PlayerConnection:
                 # Generate discriminator (between 0001 and 9999, inclusive)
                 while self.user_discrim is None:
                     discrim = str(random.randint(1, 9999)).zfill(4)
-                    if not redis.exists(self.host.namespaced(f"user_name:{username}#{discrim}")):
+                    if not redis.exists(namespaced(f"user_name:{username}#{discrim}")):
                         self.user_discrim = discrim
 
                 self.user_name = username
                 self.user_token = secrets.token_urlsafe(64)
 
                 redis.pipeline() \
-                    .set(self.host.namespaced(f"user_name:{self.name_with_discrim}"), self.user_token) \
-                    .set(self.host.namespaced(f"token:{self.user_token}"), self.name_with_discrim) \
+                    .set(namespaced(f"user_name:{self.name_with_discrim}"), self.user_token) \
+                    .set(namespaced(f"token:{self.user_token}"), self.name_with_discrim) \
                     .execute()
 
                 self.upgrade(st.HS_IDENTIFIED)
@@ -131,22 +134,23 @@ class PlayerConnection:
                 message: LobbySetStateMessage = message
                 if message.state == "list":
                     self.upgrade(st.LOBBY_LIST)
-                    await self.send(LobbyUpdateListMessage(lobbies=[
-                        {
-                            "id": "1",
-                            "name": "cool room",
-                            "open": True,
-                            "created_time": 0,
-                            "start_time": None,
-                            "max_players": 2,
-                            "players": [
-                                {
-                                    "name": "notmomo#0001",
-                                    "ready": True
-                                }
-                            ]
-                        }
-                    ]))
+                    # get all open lobbies from redis
+                    open_lobbies_ids = list(self.host.redis().smembers(namespaced("lobby_open_index")))
+                    if len(open_lobbies_ids):
+                        open_lobbies = self.host.redis().mget(
+                            list(namespaced(f"lobby:{lid.decode('utf-8')}") for lid in open_lobbies_ids)
+                        )
+                    else:
+                        open_lobbies = []
+
+                    response_lobbies = [
+                        LobbyState.deserialize(
+                            json.loads(lobby_json_bstr.decode('utf-8'))
+                        ).serialize()
+                        for lobby_json_bstr in open_lobbies
+                    ]
+
+                    await self.send(LobbyUpdateListMessage(lobbies=response_lobbies))
                     return
 
         if self.state == st.LOBBY_LIST or self.state == st.LOBBY_LIST:
@@ -155,7 +159,7 @@ class PlayerConnection:
                 message: LobbyConfigMessage = message
 
                 lobby_name = message.name
-                if not lobby_name:
+                if lobby_name is None:
                     return
                 lobby_name = lobby_name.strip()
                 if not validator.lobby_name_valid(lobby_name):
@@ -165,20 +169,41 @@ class PlayerConnection:
                     return
 
                 max_players = message.max_players
-                if not isinstance(max_players, int) or 3 < max_players < 1:
+                if not isinstance(max_players, int) or max_players > 3 or max_players < 1:
                     await self.send(
                         LobbyConfigResponseMessage(error="Invalid player count, must be between 1 and 3 players.")
                     )
                     return
 
                 lobby_id = str(uuid.uuid4())
+                current_time_epoch_seconds = int(time.time())
 
-                # todo: proper lobby encoder
-                self.host.redis().publish(channels.CHANNEL_LOBBY_LIST, json.dumps({
-                    "lobby_id": lobby_id,
-                    "name": lobby_name,
-                    "max_players": max_players
-                }))
+                lobby_state = LobbyState(
+                    lobby_id=lobby_id,
+                    name=lobby_name,
+                    created_time=current_time_epoch_seconds,
+                    start_time=None,
+                    max_players=max_players,
+                    players=[
+                        LobbyUser(name=self.name_with_discrim, ready=False)
+                    ]
+                )
+                lobby_state_json = json.dumps(lobby_state.serialize())
+
+                # Set in redis and notify the lobby list channel
+                self.host.redis().pipeline() \
+                    .set(namespaced(f"lobby:{lobby_id}"), lobby_state_json) \
+                    .publish(channels.CHANNEL_LOBBY_LIST, lobby_state_json) \
+                    .execute()
+
+                # Notify client that the lobby was created
+                await self.send(
+                    LobbyConfigResponseMessage(
+                        lobby_id=lobby_id,
+                        error=None
+                    )
+                )
+                self.upgrade(st.LOBBY_VIEW)
                 return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
@@ -197,10 +222,36 @@ class PlayerConnection:
         if not new_state.can_upgrade_from(self.state):
             print(f"Failed to upgrade a connection, state={self.state} cannot upgrade to state={new_state}")
             return
+        old_state = self._state
         self._state = new_state
+        self._handle_state_change(old_state, new_state)
 
     def downgrade(self, new_state: st.State):
         if not self.state.can_upgrade_from(new_state):
             print(f"Failed to downgrade a connection, state={self.state} cannot downgrade to state={new_state}")
             return
+        old_state = self._state
         self._state = new_state
+        self._handle_state_change(old_state, new_state)
+
+    def _handle_state_change(self, old_state: st.State, new_state: st.State):
+        if new_state == st.LOBBY_LIST or new_state == st.LOBBY_VIEW and self._handler_lobby_list is None:
+            # Subscribe to lobby list updates
+            self._handler_lobby_list = self.host.redis_channel_sub(
+                channels.CHANNEL_LOBBY_LIST,
+                handler=self._handle_lobby_list_update()
+            )
+
+    def _handle_lobby_list_update(self):
+        def _handler(message):
+            if message["type"] != "message":
+                return
+
+            lobby_json = message["data"].decode("utf-8")
+            lobby_obj = json.loads(lobby_json)
+            serialize_clean = LobbyState.deserialize(lobby_obj).serialize()
+            asyncio.new_event_loop().run_until_complete(
+                self.send(LobbyUpdateListMessage(lobbies=[serialize_clean]))
+            )
+
+        return _handler

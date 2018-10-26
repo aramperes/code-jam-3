@@ -1,7 +1,9 @@
 import asyncio
+import json
 import secrets
 import signal
 import sys
+import threading
 from collections import defaultdict
 from queue import Queue
 from threading import Thread
@@ -9,12 +11,12 @@ from typing import Dict
 
 import redis
 import websockets
+from game import channels
+from game.namespace import namespaced
 from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage
 from game.redis_handler import RedisChannelReceipt
-
-_REDIS_NAMESPACE = "deathwatch"
 
 
 class GameHost:
@@ -39,7 +41,6 @@ class GameHost:
 
     def run(self):
         self._init_redis_pubsub()
-        print("Done")
         self._init_websocket_server()
 
     def _init_websocket_server(self):
@@ -92,18 +93,18 @@ class GameHost:
     def _redis_pubsub_loop(self):
         redis_connection = self.redis()
         self._redis_pubsub_connection = redis_connection.pubsub()
-        self._redis_pubsub_connection.subscribe(self.namespaced("channel:dummy"))
-
-        self.redis_channel_sub(self.namespaced("channel:dummy"), lambda msg: print(msg))
+        self._redis_pubsub_connection.subscribe(namespaced("channel:dummy"))
+        self._init_lobby_cleanup_job()
 
         while self._redis_thread_kill_queue.empty():
             message = self._redis_pubsub_connection.get_message(timeout=0.05)
             if not message:
                 continue
             channel = message["channel"].decode("utf-8")
-            for handler in self._redis_channels[channel]:
-                handler: RedisChannelReceipt = handler
-                handler.func(message)
+            with threading.Lock():
+                for handler in self._redis_channels[channel]:
+                    handler: RedisChannelReceipt = handler
+                    handler.func.__call__(message)
 
     def redis_channel_sub(self, channel: str, handler) -> RedisChannelReceipt:
         receipt = RedisChannelReceipt(handler)
@@ -126,6 +127,33 @@ class GameHost:
     def redis(self):
         return redis.Redis(connection_pool=self._redis_pool)
 
-    @staticmethod
-    def namespaced(key):
-        return f"{_REDIS_NAMESPACE}:{key}"
+    def _init_lobby_cleanup_job(self):
+        open_index = namespaced("lobby_open_index")
+
+        # Pubsub handler that updates the "open" lobby list for faster indexing
+        def handle_lobby_update(message):
+            if message["type"] != "message":
+                return
+            lobby_json = message["data"].decode("utf-8")
+            lobby_obj = json.loads(lobby_json)
+            lobby_is_open = bool(lobby_obj["open"])
+            lobby_id = lobby_obj["id"]
+
+            # check if lobby state in redis
+            redis_lobby_state = bool(self.redis().sismember(
+                open_index,
+                lobby_id
+            ))
+            if lobby_is_open != redis_lobby_state:
+                # something changed
+                if lobby_is_open:
+                    # add to set
+                    self.redis().sadd(open_index, lobby_id)  # sadd :(
+                else:
+                    # remove from set
+                    self.redis().srem(open_index, lobby_id)
+
+        self.redis_channel_sub(
+            channels.CHANNEL_LOBBY_LIST,
+            handler=handle_lobby_update
+        )

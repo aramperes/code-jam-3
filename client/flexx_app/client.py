@@ -24,8 +24,8 @@ class Client:
         def call(msg):
             frame = JSON.parse(msg["data"])
             op = frame["op"]
-            print(" > " + op)
             payload = frame["payload"]
+            print(" > " + op + " " + JSON.stringify(payload))
 
             if op == "handshake:ready":
                 token = None
