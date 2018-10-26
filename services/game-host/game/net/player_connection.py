@@ -35,6 +35,7 @@ class PlayerConnection:
         self.user_discrim: str = None
 
         self._handler_lobby_list = None
+        self._current_lobby_id = None
 
     async def send(self, message: OutboundMessage):
         if self.websocket.closed:
@@ -147,7 +148,7 @@ class PlayerConnection:
                         LobbyState.deserialize(
                             json.loads(lobby_json_bstr.decode('utf-8'))
                         ).serialize()
-                        for lobby_json_bstr in open_lobbies
+                        for lobby_json_bstr in filter(lambda lb: lb is not None, open_lobbies)
                     ]
 
                     await self.send(LobbyUpdateListMessage(lobbies=response_lobbies))
@@ -203,6 +204,7 @@ class PlayerConnection:
                         error=None
                     )
                 )
+                self._current_lobby_id = lobby_id
                 self.upgrade(st.LOBBY_VIEW)
                 return
 
@@ -210,8 +212,35 @@ class PlayerConnection:
 
     def cleanup(self):
         # session death
+
+        # remove pubsub handlers
         if self._handler_lobby_list is not None:
             self.host.redis_channel_unsub(self._handler_lobby_list)
+
+        # remove self from current lobby
+        if self._current_lobby_id is not None:
+            self._leave_lobby(self._current_lobby_id)
+            self._current_lobby_id = None
+
+    def _leave_lobby(self, lobby_id: str):
+        # Removes this player from a lobby in Redis. Does not notify the client specifically, but it may be notified
+        # through the global "lobby list" update.
+
+        lobby_json = self.host.redis().get(namespaced(f"lobby:{lobby_id}"))
+        if lobby_json is not None:
+            lobby_obj = json.loads(lobby_json.decode('utf-8'))
+            lobby_state = LobbyState.deserialize(lobby_obj)
+            # Remove player from list
+            lobby_state.players = list(filter(
+                lambda player: player.name != self.name_with_discrim,
+                lobby_state.players
+            ))
+            lobby_state_json = json.dumps(lobby_state.serialize())
+            # Send to redis and notify
+            self.host.redis().pipeline() \
+                .set(namespaced(f"lobby:{lobby_id}"), lobby_state_json) \
+                .publish(channels.CHANNEL_LOBBY_LIST, lobby_state_json) \
+                .execute()
 
     @property
     def state(self):

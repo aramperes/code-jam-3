@@ -32,7 +32,7 @@ class LobbyState:
 
     @property
     def is_open(self) -> bool:
-        return len(self.players) < self.max_players
+        return 0 < len(self.players) < self.max_players
 
     def serialize(self):
         return {

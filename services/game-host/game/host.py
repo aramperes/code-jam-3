@@ -109,14 +109,16 @@ class GameHost:
 
     def redis_channel_sub(self, channel: str, handler) -> RedisChannelReceipt:
         receipt = RedisChannelReceipt(handler, channel)
-        self._redis_pubsub_connection.subscribe(channel)
+        if len(self._redis_channels[channel]) == 0:
+            self._redis_pubsub_connection.subscribe(channel)
         self._redis_channels[channel].add(receipt)
         return receipt
 
     def redis_channel_unsub(self, receipt: RedisChannelReceipt):
         channel = receipt.channel
         self._redis_channels[channel].remove(receipt)
-        self._redis_pubsub_connection.unsubscribe(channel)
+        if len(self._redis_channels[channel]) == 0:
+            self._redis_pubsub_connection.unsubscribe(channel)
 
     def _signal_handler(self):
         def handler(*args):
@@ -132,7 +134,8 @@ class GameHost:
     def _init_lobby_cleanup_job(self):
         open_index = namespaced("lobby_open_index")
 
-        # Pubsub handler that updates the "open" lobby list for faster indexing
+        # Pubsub handler that updates the "open" lobby list for faster indexing,
+        # as well as cleaning up empty lobbies
         def handle_lobby_update(message):
             if message["type"] != "message":
                 return
@@ -154,6 +157,10 @@ class GameHost:
                 else:
                     # remove from set
                     self.redis().srem(open_index, lobby_id)
+
+            # check if lobby is empty
+            if len(lobby_obj["players"]) == 0:
+                self.redis().delete(namespaced(f"lobby:{lobby_id}"))
 
         self.redis_channel_sub(
             channels.CHANNEL_LOBBY_LIST,
