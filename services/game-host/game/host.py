@@ -4,6 +4,7 @@ import secrets
 import signal
 import sys
 import threading
+import time
 from collections import defaultdict
 from queue import Queue
 from threading import Thread
@@ -84,7 +85,9 @@ class GameHost:
             session_token=session_token
         )
         print(f"New connection! Session token: {session_token}")
-        await player_connection.send(HandshakeReadyMessage())
+        await player_connection.send(
+            HandshakeReadyMessage(server_time=int(time.time()))
+        )
         return player_connection
 
     def _init_redis_pubsub(self):

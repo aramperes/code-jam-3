@@ -1,5 +1,7 @@
 from flexx import flx
 
+from flexx_app import timer
+
 
 class LobbyListElementWidget(flx.Widget):
     list_parent = flx.Property()
@@ -21,8 +23,12 @@ class LobbyListElementWidget(flx.Widget):
         self.update_lobby(self.lobby)
 
     def update_lobby(self, lobby):
+        # creation time
+
         self.lobby_name_field.set_html(
-            "<strong>" + lobby["name"] + "</strong> <i>(created 2m ago, open)</i>"
+            "<strong>" + lobby["name"] + "</strong> <i>(created <span class='timer-update'" +
+            "timestamp='" + str(lobby["created_time"]) + "'>" + timer.get_human_delay(lobby["created_time"]) +
+            "</span> ago, open)</i>"
         )
 
         self.lobby_players_field.set_html(

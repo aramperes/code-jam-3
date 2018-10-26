@@ -1,6 +1,6 @@
 from pscript.stubs import JSON
 
-from flexx_app import ws, storage
+from flexx_app import ws, storage, timer
 
 
 class Client:
@@ -32,6 +32,12 @@ class Client:
                 if storage.read_token() is not None:
                     token = str(storage.read_token())
                 self.session_token = frame["session"]
+
+                # get time
+                server_time = int(payload["server_time"])
+                timer.DESYNC = timer.calculate_desync(server_time)
+                timer.start_task_update_timers()
+
                 self.send("handshake:identify", {"token": token})
                 self.base.set_loading_status("Authenticating...")
                 return

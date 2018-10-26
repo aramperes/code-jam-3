@@ -15,7 +15,13 @@
 ## `handshake`
 
 ### `s-c handshake:ready`
-  **Payload**: *none*
+  **Payload**:
+  
+  ```json
+  {
+    "server_time": 1540549944
+  }
+  ```
 
 ### `c-s handshake:identify`
 
