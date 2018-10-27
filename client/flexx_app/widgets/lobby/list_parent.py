@@ -39,7 +39,9 @@ class LobbyListParentWidget(flx.Widget):
         }) as self.menu_container:
             with flx.Widget(style={
                 "display": "grid",
-                "grid-gap": "10px"
+                "grid-gap": "10px",
+                "max-height": "400px",
+                "overflow-y": 'auto'
             }) as self.lobby_list_container:
                 self.lobby_list_loading = flx.Label(text="Searching for lobbies...",
                                                     style={"text-align": "center",

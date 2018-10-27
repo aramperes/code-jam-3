@@ -15,6 +15,8 @@ from game.net.handshake.new_user import HandshakeNewUserMessage
 from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
 from game.net.handshake.upgrade import HandshakeUpgradeMessage
 from game.net.handshake.user_info import HandshakeUserInfoMessage
+from game.net.lobby.chat import LobbyChatMessage
+from game.net.lobby.chat_broadcast import LobbyChatBroadcastMessage
 from game.net.lobby.config import LobbyConfigMessage
 from game.net.lobby.config_response import LobbyConfigResponseMessage
 from game.net.lobby.join_response import LobbyJoinResponseMessage
@@ -37,6 +39,7 @@ class PlayerConnection:
 
         self._handler_lobby_list = None
         self._current_lobby_id = None
+        self._handler_lobby_chat = None
 
     async def send(self, message: OutboundMessage):
         if self.websocket.closed:
@@ -200,8 +203,7 @@ class PlayerConnection:
                         error=None
                     )
                 )
-                self._current_lobby_id = lobby_id
-                self.upgrade(st.LOBBY_VIEW)
+                self._view_lobby(lobby_id)
                 return
 
             if isinstance(message, LobbySetStateMessage):
@@ -232,8 +234,22 @@ class PlayerConnection:
                 await self.send(
                     LobbyJoinResponseMessage(lobby_id=lobby_id, joined=True)
                 )
-                self.upgrade(st.LOBBY_VIEW)
-                self._current_lobby_id = lobby_id
+                self._view_lobby(lobby_id)
+                return
+
+        if self.state == st.LOBBY_VIEW:
+            if isinstance(message, LobbyChatMessage):
+                message: LobbyChatMessage = message
+                # todo: sanitize message (?)
+                # send to redis channel for the current lobby
+                channel = channels.lobby_chat(self._current_lobby_id)
+                self.host.redis().publish(
+                    channel,
+                    json.dumps({
+                        "user_name": self.name_with_discrim,
+                        "message": message.message
+                    })
+                )
                 return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
@@ -265,6 +281,18 @@ class PlayerConnection:
             ))
             # Send to redis and notify
             self._edit_and_publish_lobby_state(lobby_state)
+            # Unsubscribe from chat
+            if self._handler_lobby_chat:
+                self.host.redis_channel_unsub(self._handler_lobby_chat)
+
+    def _view_lobby(self, lobby_id: str):
+        self.upgrade(st.LOBBY_VIEW)
+        self._current_lobby_id = lobby_id
+        # Subscribe to chat
+        self._handler_lobby_chat = self.host.redis_channel_sub(
+            channels.lobby_chat(lobby_id),
+            self._handle_lobby_chat()
+        )
 
     @property
     def state(self):
@@ -310,6 +338,22 @@ class PlayerConnection:
             serialize_clean = LobbyState.deserialize(lobby_obj).serialize()
             asyncio.new_event_loop().run_until_complete(
                 self.send(LobbyUpdateListMessage(lobbies=[serialize_clean]))
+            )
+
+        return _handler
+
+    def _handle_lobby_chat(self):
+        def _handler(payload):
+            if payload["type"] != "message":
+                return
+            chat_data_json = payload["data"].decode("utf-8")
+            chat_data = json.loads(chat_data_json)
+            broadcast_message = LobbyChatBroadcastMessage(
+                user_name=chat_data.get("user_name"),
+                message=chat_data.get("message", "")
+            )
+            asyncio.new_event_loop().run_until_complete(
+                self.send(broadcast_message)
             )
 
         return _handler

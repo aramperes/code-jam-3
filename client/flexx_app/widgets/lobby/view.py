@@ -1,5 +1,6 @@
 from flexx import flx
 
+from flexx_app.widgets.lobby.chat_parent import LobbyChatParentWidget
 from flexx_app.widgets.lobby.player_list_parent import LobbyPlayerListParentWidget
 
 
@@ -10,7 +11,8 @@ class LobbyViewWidget(flx.Widget):
 
     def init(self):
         self.apply_style({
-            "height": "400px"
+            "height": "400px",
+            "display": "flex"
         })
 
         with flx.Widget(style={
@@ -20,7 +22,12 @@ class LobbyViewWidget(flx.Widget):
         }):
             self.player_list_parent = LobbyPlayerListParentWidget(client=self.client,
                                                                   cached_lobby_obj=self.cached_lobby_obj)
-
+        with flx.Widget(style={
+            "height": "100%",
+            "width": "100%",
+            "margin-left": "10px"
+        }):
+            LobbyChatParentWidget(client=self.client)
         if self.cached_lobby_obj:
             self._update_lobby_view(self.cached_lobby_obj)
 

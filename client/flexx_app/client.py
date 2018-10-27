@@ -103,6 +103,13 @@ class Client(flx.Component):
 
                 # Clear the request
                 self.set_lobby_join_request(None)
+                return
+
+            if op == "lobby:chat_broadcast":
+                user_name = payload["user_name"]
+                chat_message = payload["message"]
+                self.on_lobby_chat(dict(user_name=user_name, chat_message=chat_message))
+                return
 
         return call
 
@@ -138,6 +145,10 @@ class Client(flx.Component):
     @flx.emitter
     def on_lobby_leave(self):
         return dict()
+
+    @flx.emitter
+    def on_lobby_chat(self, message):
+        return message
 
     @flx.reaction("lobby_list_update")
     def __on_lobby_list_update_current(self, *events):

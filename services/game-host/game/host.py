@@ -14,9 +14,9 @@ import redis
 import websockets
 from game import channels
 from game.namespace import namespaced
-from game.net import INBOUND_REGISTRY
 from game.net.handshake.ready import HandshakeReadyMessage
 from game.net.message import InboundMessage
+from game.net.registry import INBOUND_REGISTRY
 from game.redis_handler import RedisChannelReceipt
 
 
