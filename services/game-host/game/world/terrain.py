@@ -94,4 +94,18 @@ def generate_terrain(dimensions, zone_size=15, spawn_range=50, seed=None):
             if max_noise_range + 0.2 > river_val > max_noise_range > city_val > 0:
                 features[y][x] = "fC"
 
+            # For shelters, we'll try to keep them pretty far from the cities for the added challenge.
+            # The generation is done by making a highly sparse (+octave) noise and using an invert treshold from
+            # the cities
+
+            shelter_val = noise_octave(
+                noise_func=noise.snoise3,
+                octaves=4,
+                persistence=0.4,
+                coordinates=(x, y, seed)
+            )
+
+            if max_noise_range + 0.8 > shelter_val > max_noise_range + 0.75:
+                features[y][x] = "fS"
+
     return map, features
