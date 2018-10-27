@@ -98,7 +98,7 @@
 
 ### `c-s lobby:config`
 
-  *Note: This message is used for both creating and updating a lobby. If no ID is provided,*
+  *Note: This message is used for both creating and updating (**not implemented**) a lobby. If no ID is provided,*
   *the server will assume it is a new lobby.*
 
   **Payload**:
@@ -192,14 +192,20 @@
 
 ### `c-s lobby:quit`
 
+  **Not currently implemented.**
+
   **Payload**: *none*
 
-### `c-s lobby:kick`
+### `s-c lobby:transfer`
+
+  **Not currently implemented.**
+
+  *This message is sent when it is no longer the gateway's task to handle the connection.*
 
   **Payload**:
-  
   ```json
   {
-    "user_name": "<user>#<discrim>"
+    "target": "ws://localhost:8081/game/",
+    "track_token": "<token defined by the target>"
   }
   ```
