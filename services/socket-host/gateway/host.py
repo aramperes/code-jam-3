@@ -1,9 +1,8 @@
 import json
+import time
 
 import redis
-import time
 import websockets
-
 from common.host import CommonServerHost
 from common.namespace import namespaced
 from gateway import channels

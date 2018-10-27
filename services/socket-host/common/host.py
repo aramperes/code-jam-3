@@ -10,7 +10,6 @@ from typing import Dict
 
 import redis
 import websockets
-
 from common.net.message import InboundMessage
 from common.net.registry import BaseInboundRegistry
 from common.redis_handler import RedisChannelReceipt

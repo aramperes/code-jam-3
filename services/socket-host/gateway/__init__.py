@@ -1,7 +1,6 @@
 import os
 
 import redis
-
 from gateway.host import GatewayHost
 
 redis_pool = redis.ConnectionPool(

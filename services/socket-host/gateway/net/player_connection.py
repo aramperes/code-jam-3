@@ -2,11 +2,10 @@ import asyncio
 import json
 import random
 import secrets
+import time
 import uuid
 
-import time
 import websockets
-
 from common.namespace import namespaced
 from common.net.connection import CommonSocketConnection
 from common.net.message import InboundMessage

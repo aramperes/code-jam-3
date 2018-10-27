@@ -1,9 +1,8 @@
 import json
 
 import websockets
-
 from common.host import CommonServerHost
-from common.net.message import OutboundMessage, InboundMessage
+from common.net.message import InboundMessage, OutboundMessage
 from common.net.state import State
 
 
