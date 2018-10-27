@@ -1,12 +1,17 @@
+import asyncio
 import json
+import threading
 import time
 
 import redis
 import websockets
 from common.host import CommonServerHost
 from common.namespace import namespaced
+from common.net.connection import CommonSocketConnection
 from gateway import channels
+from gateway.net import state
 from gateway.net.handshake.ready import HandshakeReadyMessage
+from gateway.net.lobby.transfer import LobbyTransferMessage
 from gateway.net.registry import INBOUND_REGISTRY
 
 
@@ -63,8 +68,34 @@ class GatewayHost(CommonServerHost):
             # check if lobby is empty
             if len(lobby_obj["players"]) == 0:
                 self.redis().delete(namespaced(f"lobby:{lobby_id}"))
+                return
+
+            # check if all players are ready
+            if len(lobby_obj["players"]) == lobby_obj["max_players"]:
+                all_ready = all([player["ready"] for player in lobby_obj["players"]])
+                if all_ready:
+                    # transfer all players to game host
+                    with threading.Lock():
+                        player_connections = set()
+                        for player_conn in self._ws_connections.values():
+                            if player_conn.current_lobby_id == lobby_id:
+                                player_connections.add(player_conn)
+                    for player_conn in player_connections:
+                        self.transfer_to_game_host(player_conn)
+                        print("Transferring", player_conn.name_with_discrim)
 
         self.redis_channel_sub(
             channels.CHANNEL_LOBBY_LIST,
             handler=handle_lobby_update
+        )
+
+    def transfer_to_game_host(self, connection: CommonSocketConnection):
+        async def send_goodbye():
+            # todo: make target URL configurable
+            connection.upgrade(state.TRANSFERRED)
+            await connection.send(LobbyTransferMessage(target="ws://localhost:8082/", track_token="todo"))
+            # At this point, the client cannot do anything except disconnect.
+
+        asyncio.new_event_loop().run_until_complete(
+            send_goodbye()
         )

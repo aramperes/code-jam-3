@@ -196,8 +196,6 @@
 
 ### `s-c lobby:transfer`
 
-  **Not currently implemented.**
-
   *This message is sent when it is no longer the gateway's task to handle the connection.*
 
   **Payload**:

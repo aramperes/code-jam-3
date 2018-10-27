@@ -15,7 +15,7 @@ class Client(flx.Component):
         self.session_token = None
         self._username_prompt_transaction = None
 
-        self.socket = ws.create_websocket_connection(ws_url, self._ws_callback())
+        self.socket = ws.create_websocket_connection(ws_url, self._ws_gateway_callback())
 
     def send(self, op, payload):
         print(" < " + op + " " + JSON.stringify(payload))
@@ -25,7 +25,7 @@ class Client(flx.Component):
             "payload": payload
         }))
 
-    def _ws_callback(self):
+    def _ws_gateway_callback(self):
         def call(msg):
             frame = JSON.parse(msg["data"])
             op = frame["op"]
@@ -111,6 +111,12 @@ class Client(flx.Component):
                 self.on_lobby_chat(dict(user_name=user_name, chat_message=chat_message))
                 return
 
+            if op == "lobby:transfer":
+                target_url = payload["target"]
+                track_token = payload["token"]
+                self.transfer_to(url=target_url, track_token=track_token)
+                return
+
         return call
 
     @flx.action
@@ -166,3 +172,20 @@ class Client(flx.Component):
                 if lobby_obj["id"] == self.current_lobby_id:
                     self.current_lobby_update(lobby_obj)
                     break
+
+    def _ws_game_callback(self):
+        def call(msg):
+            frame = JSON.parse(msg["data"])
+            print("Received frame from game host")
+            print(frame)
+
+        return call
+
+    def transfer_to(self, url, track_token):
+        self.base.lobby_parent.dispose()
+        self.base.lobby_parent = None
+
+        self.base.set_loading_status("Transferring to game host...")
+
+        self.socket.close()
+        self.socket = ws.create_websocket_connection(url, self._ws_game_callback())

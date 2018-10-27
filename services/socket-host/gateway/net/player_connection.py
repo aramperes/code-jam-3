@@ -37,8 +37,8 @@ class PlayerConnection(CommonSocketConnection):
         self.user_name: str = None
         self.user_discrim: str = None
 
+        self.current_lobby_id = None
         self._handler_lobby_list = None
-        self._current_lobby_id = None
         self._handler_lobby_chat = None
 
     async def reject_authentication(self):
@@ -234,7 +234,7 @@ class PlayerConnection(CommonSocketConnection):
                 message: LobbyChatMessage = message
                 # todo: sanitize message (?)
                 # send to redis channel for the current lobby
-                channel = channels.lobby_chat(self._current_lobby_id)
+                channel = channels.lobby_chat(self.current_lobby_id)
                 self.host.redis().publish(
                     channel,
                     json.dumps({
@@ -246,7 +246,7 @@ class PlayerConnection(CommonSocketConnection):
 
             if isinstance(message, LobbyUserReadyMessage):
                 message: LobbyUserReadyMessage = message
-                lobby_state_json = self.host.redis().get(namespaced(f"lobby:{self._current_lobby_id}"))
+                lobby_state_json = self.host.redis().get(namespaced(f"lobby:{self.current_lobby_id}"))
                 lobby_state_json = lobby_state_json.decode("utf-8")
                 lobby_state = LobbyState.deserialize(json.loads(lobby_state_json))
 
@@ -255,12 +255,11 @@ class PlayerConnection(CommonSocketConnection):
                         player_obj.ready = message.ready
                         break
                 self._edit_and_publish_lobby_state(lobby_state)
-                # todo: check if all players are ready, and transfer connections to game-host
                 return
 
             if isinstance(message, LobbyQuitMessage):
                 message: LobbyQuitMessage = message
-                self._leave_lobby(self._current_lobby_id)
+                self._leave_lobby(self.current_lobby_id)
                 self.downgrade(st.LOBBY_LIST)
                 return
 
@@ -274,9 +273,9 @@ class PlayerConnection(CommonSocketConnection):
             self.host.redis_channel_unsub(self._handler_lobby_list)
 
         # remove self from current lobby
-        if self._current_lobby_id is not None:
-            self._leave_lobby(self._current_lobby_id)
-            self._current_lobby_id = None
+        if self.current_lobby_id is not None:
+            self._leave_lobby(self.current_lobby_id)
+            self.current_lobby_id = None
 
     def _leave_lobby(self, lobby_id: str):
         # Removes this player from a lobby in Redis. Does not notify the client specifically, but it may be notified
@@ -299,7 +298,7 @@ class PlayerConnection(CommonSocketConnection):
 
     def _view_lobby(self, lobby_id: str):
         self.upgrade(st.LOBBY_VIEW)
-        self._current_lobby_id = lobby_id
+        self.current_lobby_id = lobby_id
         # Subscribe to chat
         self._handler_lobby_chat = self.host.redis_channel_sub(
             channels.lobby_chat(lobby_id),
