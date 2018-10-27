@@ -34,10 +34,10 @@ build:client:
     paths:
       - services/client-host/project/templates/_flexx_output.html
 
-lint:game-host:
+lint:socket-host:
   stage: lint
   script:
-    - cd services/game-host
+    - cd services/socket-host
     - pipenv sync --dev
     - pipenv run lint
 

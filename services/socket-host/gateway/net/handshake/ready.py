@@ -1,6 +1,6 @@
 from typing import Dict, Union
 
-from game.net.message import OutboundMessage
+from common.net.message import OutboundMessage
 
 
 class HandshakeReadyMessage(OutboundMessage):

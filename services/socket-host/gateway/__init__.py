@@ -1,7 +1,8 @@
 import os
 
 import redis
-from game.host import GameHost
+
+from gateway.host import GatewayHost
 
 redis_pool = redis.ConnectionPool(
     host=os.getenv("REDIS_HOST", "redis"),
@@ -10,12 +11,12 @@ redis_pool = redis.ConnectionPool(
     max_connections=10
 )
 
-game_host = GameHost(
+gateway_host = GatewayHost(
     redis_pool=redis_pool,
-    host=os.getenv("GAME_HOST", None),
-    port=int(os.getenv("GAME_PORT", 5000))
+    host=os.getenv("GATEWAY_HOST", None),
+    port=int(os.getenv("GATEWAY_PORT", 5000))
 )
 
 
 def run():
-    game_host.run()
+    gateway_host.run()

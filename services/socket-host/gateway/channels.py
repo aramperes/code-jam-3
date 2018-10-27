@@ -1,4 +1,4 @@
-from game.namespace import namespaced
+from common.namespace import namespaced
 
 CHANNEL_LOBBY_LIST = namespaced("channel:lobby_list")
 

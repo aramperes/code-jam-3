@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from game.net.message import OutboundMessage
+from common.net.message import OutboundMessage
 
 
 class LobbyUpdateListMessage(OutboundMessage):

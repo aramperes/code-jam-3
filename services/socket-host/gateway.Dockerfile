@@ -6,4 +6,4 @@ RUN pip install pipenv
 RUN pipenv lock --pre
 RUN pipenv sync
 
-CMD pipenv run python3 .
+CMD pipenv run python3 . --gateway

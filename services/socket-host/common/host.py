@@ -1,10 +1,8 @@
 import asyncio
-import json
 import secrets
 import signal
 import sys
 import threading
-import time
 from collections import defaultdict
 from queue import Queue
 from threading import Thread
@@ -12,24 +10,25 @@ from typing import Dict
 
 import redis
 import websockets
-from game import channels
-from game.namespace import namespaced
-from game.net.handshake.ready import HandshakeReadyMessage
-from game.net.message import InboundMessage
-from game.net.registry import INBOUND_REGISTRY
-from game.redis_handler import RedisChannelReceipt
+
+from common.net.message import InboundMessage
+from common.net.registry import BaseInboundRegistry
+from common.redis_handler import RedisChannelReceipt
 
 
-class GameHost:
+class CommonServerHost:
+    """
+    WebSocket + redis server.
+    """
 
-    def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool):
+    def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool, inbound_registry: BaseInboundRegistry):
         self._ws_host = host
         self._ws_port = port
         self._redis_pool = redis_pool
+        self._inbound_registry = inbound_registry
 
-        from game.net.player_connection import PlayerConnection
-        self._PlayerConnectionType = PlayerConnection
-        self._ws_connections: Dict[str, PlayerConnection] = {}
+        from common.net.connection import CommonSocketConnection
+        self._ws_connections: Dict[str, CommonSocketConnection] = {}
 
         self._redis_async_loop = None
         self._ws_async_loop = None
@@ -66,7 +65,7 @@ class GameHost:
                     data = await websocket.recv()
                     message = InboundMessage(data)
                     op_code = message.op
-                    message = INBOUND_REGISTRY[op_code](data)
+                    message = self._inbound_registry.get(op_code)(data)
 
                     await connection.on_receive(message)
                 except websockets.exceptions.ConnectionClosed:
@@ -79,26 +78,31 @@ class GameHost:
 
     async def _ws_init_connection(self, websocket: websockets.WebSocketServerProtocol):
         session_token = secrets.token_urlsafe(64)
-        player_connection = self._PlayerConnectionType(
-            host=self,
-            websocket=websocket,
-            session_token=session_token
-        )
+        socket_connection = self.create_socket_connection_object(websocket, session_token)
         print(f"New connection! Session token: {session_token}")
-        await player_connection.send(
-            HandshakeReadyMessage(server_time=int(time.time()))
-        )
-        return player_connection
+        await self.post_handle_new_connection(socket_connection)
+        return socket_connection
+
+    async def post_handle_new_connection(self, connection):
+        pass
+
+    def create_socket_connection_object(self, websocket: websockets.WebSocketServerProtocol, session_token: str):
+        raise NotImplementedError()
+
+    def redis(self):
+        return redis.Redis(connection_pool=self._redis_pool)
 
     def _init_redis_pubsub(self):
         thread = Thread(target=self._redis_pubsub_loop)
         thread.start()
 
+    def handle_redis_init(self):
+        pass
+
     def _redis_pubsub_loop(self):
         redis_connection = self.redis()
         self._redis_pubsub_connection = redis_connection.pubsub()
-        self._redis_pubsub_connection.subscribe(namespaced("channel:dummy"))
-        self._init_lobby_cleanup_job()
+        self.handle_redis_init()
 
         while self._redis_thread_kill_queue.empty():
             message = self._redis_pubsub_connection.get_message(timeout=0.05)
@@ -130,42 +134,3 @@ class GameHost:
 
         signal.signal(signal.SIGINT, handler)
         signal.signal(signal.SIGTERM, handler)
-
-    def redis(self):
-        return redis.Redis(connection_pool=self._redis_pool)
-
-    def _init_lobby_cleanup_job(self):
-        open_index = namespaced("lobby_open_index")
-
-        # Pubsub handler that updates the "open" lobby list for faster indexing,
-        # as well as cleaning up empty lobbies
-        def handle_lobby_update(message):
-            if message["type"] != "message":
-                return
-            lobby_json = message["data"].decode("utf-8")
-            lobby_obj = json.loads(lobby_json)
-            lobby_is_open = bool(lobby_obj["open"])
-            lobby_id = lobby_obj["id"]
-
-            # check if lobby state in redis
-            redis_lobby_state = bool(self.redis().sismember(
-                open_index,
-                lobby_id
-            ))
-            if lobby_is_open != redis_lobby_state:
-                # something changed
-                if lobby_is_open:
-                    # add to set
-                    self.redis().sadd(open_index, lobby_id)  # sadd :(
-                else:
-                    # remove from set
-                    self.redis().srem(open_index, lobby_id)
-
-            # check if lobby is empty
-            if len(lobby_obj["players"]) == 0:
-                self.redis().delete(namespaced(f"lobby:{lobby_id}"))
-
-        self.redis_channel_sub(
-            channels.CHANNEL_LOBBY_LIST,
-            handler=handle_lobby_update
-        )

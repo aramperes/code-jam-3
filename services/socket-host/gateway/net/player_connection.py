@@ -2,37 +2,36 @@ import asyncio
 import json
 import random
 import secrets
-import time
 import uuid
 
+import time
 import websockets
-from game import GameHost, channels
-from game.lobby import LobbyState, LobbyUser
-from game.namespace import namespaced
-from game.net import state as st, validator
-from game.net.handshake.identify import HandshakeIdentifyMessage
-from game.net.handshake.new_user import HandshakeNewUserMessage
-from game.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
-from game.net.handshake.upgrade import HandshakeUpgradeMessage
-from game.net.handshake.user_info import HandshakeUserInfoMessage
-from game.net.lobby.chat import LobbyChatMessage
-from game.net.lobby.chat_broadcast import LobbyChatBroadcastMessage
-from game.net.lobby.config import LobbyConfigMessage
-from game.net.lobby.config_response import LobbyConfigResponseMessage
-from game.net.lobby.join_response import LobbyJoinResponseMessage
-from game.net.lobby.set_state import LobbySetStateMessage
-from game.net.lobby.update_list import LobbyUpdateListMessage
-from game.net.message import InboundMessage, OutboundMessage
+
+from common.namespace import namespaced
+from common.net.connection import CommonSocketConnection
+from common.net.message import InboundMessage
+from gateway import GatewayHost, channels
+from gateway.lobby import LobbyState, LobbyUser
+from gateway.net import state as st, validator
+from gateway.net.handshake.identify import HandshakeIdentifyMessage
+from gateway.net.handshake.new_user import HandshakeNewUserMessage
+from gateway.net.handshake.prompt_new_user import HandshakePromptNewUserMessage
+from gateway.net.handshake.upgrade import HandshakeUpgradeMessage
+from gateway.net.handshake.user_info import HandshakeUserInfoMessage
+from gateway.net.lobby.chat import LobbyChatMessage
+from gateway.net.lobby.chat_broadcast import LobbyChatBroadcastMessage
+from gateway.net.lobby.config import LobbyConfigMessage
+from gateway.net.lobby.config_response import LobbyConfigResponseMessage
+from gateway.net.lobby.join_response import LobbyJoinResponseMessage
+from gateway.net.lobby.set_state import LobbySetStateMessage
+from gateway.net.lobby.update_list import LobbyUpdateListMessage
 
 
-class PlayerConnection:
-    def __init__(self, host: GameHost, websocket: websockets.WebSocketServerProtocol, session_token: str):
-        self.host = host
-        self.websocket = websocket
-        self.session_token = session_token
-        self._state = st.HS_UNIDENTIFIED
+class PlayerConnection(CommonSocketConnection):
+    def __init__(self, host: GatewayHost, websocket: websockets.WebSocketServerProtocol, session_token: str):
+        super().__init__(host, websocket, session_token)
+
         self._user_creation_transaction = None
-
         self.user_token: str = None
         self.user_name: str = None
         self.user_discrim: str = None
@@ -40,14 +39,6 @@ class PlayerConnection:
         self._handler_lobby_list = None
         self._current_lobby_id = None
         self._handler_lobby_chat = None
-
-    async def send(self, message: OutboundMessage):
-        if self.websocket.closed:
-            return
-
-        build = message.build(self.session_token)
-        output = json.dumps(build)
-        await self.websocket.send(output)
 
     async def reject_authentication(self):
         self._user_creation_transaction = secrets.token_urlsafe(32)
@@ -295,32 +286,12 @@ class PlayerConnection:
         )
 
     @property
-    def state(self):
-        return self._state
-
-    @property
     def name_with_discrim(self):
         if not self.user_name or not self.user_discrim:
             return None
         return f"{self.user_name}#{self.user_discrim}"
 
-    def upgrade(self, new_state: st.State):
-        if not new_state.can_upgrade_from(self.state):
-            print(f"Failed to upgrade a connection, state={self.state} cannot upgrade to state={new_state}")
-            return
-        old_state = self._state
-        self._state = new_state
-        self._handle_state_change(old_state, new_state)
-
-    def downgrade(self, new_state: st.State):
-        if not self.state.can_upgrade_from(new_state):
-            print(f"Failed to downgrade a connection, state={self.state} cannot downgrade to state={new_state}")
-            return
-        old_state = self._state
-        self._state = new_state
-        self._handle_state_change(old_state, new_state)
-
-    def _handle_state_change(self, old_state: st.State, new_state: st.State):
+    def handle_state_change(self, old_state: st.State, new_state: st.State):
         if new_state == st.LOBBY_LIST or new_state == st.LOBBY_VIEW and self._handler_lobby_list is None:
             # Subscribe to lobby list updates
             self._handler_lobby_list = self.host.redis_channel_sub(

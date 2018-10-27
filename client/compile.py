@@ -1,7 +1,7 @@
 import os
 
 if __name__ == '__main__':
-    WS_URL = "ws://localhost:8080/game/"
+    WS_URL = "ws://localhost:8080/gateway/"
 
     import argparse
 
@@ -14,6 +14,7 @@ if __name__ == '__main__':
     if args.url:
         WS_URL = args.url
 
+    print(f"Using GATEWAY WebSocket URL='{WS_URL}'")
     app = flexx_app.init(WS_URL)
 
     app.export(
