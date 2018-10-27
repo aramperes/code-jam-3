@@ -8,7 +8,7 @@ class ChatMessage(flx.Widget):
 
     def init(self):
         flx.Label(
-            text=self._get_text()
+            text=self._get_text(), style={"font-size": "10pt"}
         )
 
     def _get_text(self):

@@ -8,6 +8,7 @@ class LobbyViewWidget(flx.Widget):
     client = flx.AnyProp()
     lobby_id = flx.AnyProp()
     cached_lobby_obj = flx.AnyProp()
+    is_ready = flx.BoolProp(False)
 
     def init(self):
         self.apply_style({
@@ -16,15 +17,30 @@ class LobbyViewWidget(flx.Widget):
         })
 
         with flx.Widget(style={
+            "display": "flex",
             "height": "100%",
-            "width": "250px",
-            "border": "solid 1px black"
+            "flex-direction": "column"
         }):
-            self.player_list_parent = LobbyPlayerListParentWidget(client=self.client,
-                                                                  cached_lobby_obj=self.cached_lobby_obj)
+            with flx.Widget(style={
+                "height": "100%",
+                "width": "250px",
+                "border": "solid 1px black",
+                "flex-grow": "1",
+                "margin-bottom": "10px",
+            }):
+                self.player_list_parent = LobbyPlayerListParentWidget(client=self.client,
+                                                                      cached_lobby_obj=self.cached_lobby_obj)
+            with flx.Widget(style={
+                "display": "flex",
+                "flex-direction": "row",
+                "padding-bottom": "2px"
+            }):
+                self.ready_button = flx.Button(text="Ready", style={"font-weight": "bold"})
+                self.quit_button = flx.Button(text="Quit")
+
         with flx.Widget(style={
             "height": "100%",
-            "width": "100%",
+            "flex-grow": "1",
             "margin-left": "10px"
         }):
             LobbyChatParentWidget(client=self.client)
@@ -42,3 +58,22 @@ class LobbyViewWidget(flx.Widget):
             return
         lobby_obj = event["lobby_obj"]
         self._update_lobby_view(lobby_obj)
+
+    @flx.action
+    def set_ready(self, ready):
+        self._mutate_is_ready(ready)
+        # Announce it to the world!
+        self.client.send("lobby:user_ready", {
+            "ready": ready
+        })
+        if ready:
+            self.ready_button.set_text("Un-Ready")
+        else:
+            self.ready_button.set_text("Ready")
+
+    @flx.reaction("ready_button.pointer_click")
+    def _on_ready_button_toggle(self, *events):
+        if self.is_ready == True:
+            self.set_ready(False)
+        else:
+            self.set_ready(True)

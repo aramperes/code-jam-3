@@ -24,6 +24,7 @@ from gateway.net.lobby.config_response import LobbyConfigResponseMessage
 from gateway.net.lobby.join_response import LobbyJoinResponseMessage
 from gateway.net.lobby.set_state import LobbySetStateMessage
 from gateway.net.lobby.update_list import LobbyUpdateListMessage
+from gateway.net.lobby.user_ready import LobbyUserReadyMessage
 
 
 class PlayerConnection(CommonSocketConnection):
@@ -241,6 +242,19 @@ class PlayerConnection(CommonSocketConnection):
                     })
                 )
                 return
+
+            if isinstance(message, LobbyUserReadyMessage):
+                message: LobbyUserReadyMessage = message
+                lobby_state_json = self.host.redis().get(namespaced(f"lobby:{self._current_lobby_id}"))
+                lobby_state_json = lobby_state_json.decode("utf-8")
+                lobby_state = LobbyState.deserialize(json.loads(lobby_state_json))
+
+                for player_obj in lobby_state.players:
+                    if player_obj.name == self.name_with_discrim:
+                        player_obj.ready = message.ready
+                        break
+                self._edit_and_publish_lobby_state(lobby_state)
+                # todo: check if all players are ready, and transfer connections to game-host
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
 
