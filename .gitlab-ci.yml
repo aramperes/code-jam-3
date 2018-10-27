@@ -12,15 +12,55 @@
 #
 # python:latest is 3.7 at time of commit.
 
-image: python:latest
+image: python:3.6.5-stretch
 
 before_script:
   # Print out Python information for debugging and install pipenv
   - python -V
   - pip install pipenv
 
-test:
+stages:
+  - build
+  - lint
+  - docker
+
+build:client:
+  stage: build
   script:
-  # Sync the development dependencies (flake8 & plugins) and run our lint task (see Pipfile)
-  - pipenv sync --dev
-  - pipenv run lint
+    - cd client
+    - pipenv sync --dev
+    - pipenv run compile
+  artifacts:
+    paths:
+      - services/client-host/project/templates/_flexx_output.html
+
+lint:socket-host:
+  stage: lint
+  script:
+    - cd services/socket-host
+    - pipenv sync --dev
+    - pipenv run lint
+
+lint:client-host:
+  stage: lint
+  script:
+    - cd services/client-host
+    - pipenv sync --dev
+    - pipenv run lint
+
+docker:
+  stage: docker
+  image: docker:18.06.0-ce
+  services:
+    - docker:dind
+  script:
+    - docker-compose build
+  dependencies:
+    - build:client
+  before_script:
+    - docker info
+    - apk update
+    - apk upgrade
+    - apk add python python-dev py-pip build-base
+    - pip install docker-compose
+

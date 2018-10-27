@@ -19,3 +19,4 @@ python_version = "3.6"
 [scripts]
 lint = "python -m flake8"
 compile = "python compile.py"
+compile-dev = "python compile.py --url 'ws://localhost:5000/gateway/'"

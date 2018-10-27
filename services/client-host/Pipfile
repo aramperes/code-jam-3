@@ -5,6 +5,7 @@ name = "pypi"
 
 [packages]
 flask = "*"
+itsdangerous = "==0.24"
 
 [dev-packages]
 "flake8" = "*"

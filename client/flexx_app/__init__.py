@@ -1,20 +1,12 @@
 from flexx import flx
 
-from flexx_app import http
+from flexx_app.client import Client
+from flexx_app.widgets.base import BaseWidget
 
 
-class ExampleButtons(flx.Widget):
-    def init(self):
-        http.load_jquery()
-        self.test_button = flx.Button(text='Click me!')
-
-    @flx.reaction('test_button.pointer_click')
-    def test_clicked(self, *events):
-        http.call_http("GET", "/game/", self.handle_callback_game)
-
-    def handle_callback_game(self, x):
-        version = x["version"]
-        print("Remote version: " + str(version))
-
-
-app = flx.App(ExampleButtons)
+def init(ws_url):
+    return flx.App(
+        BaseWidget,
+        ws_url=ws_url,
+        title='DeathWatch'
+    )
