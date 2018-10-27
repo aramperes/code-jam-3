@@ -42,6 +42,7 @@ def noise_octave(noise_func=None, octaves: int = 1, persistence: float = 1.0, co
 def generate_terrain(dimensions, zone_size=15, spawn_range=50, seed=None):
     map_middle = dimensions // 2
     map = [["?" for x in range(dimensions)] for y in range(dimensions)]
+    features = [[None for x in range(dimensions)] for y in range(dimensions)]
 
     if not seed:
         seed = random.randrange(-1000, 1000)
@@ -53,7 +54,7 @@ def generate_terrain(dimensions, zone_size=15, spawn_range=50, seed=None):
                     noise_func=noise.snoise3,
                     octaves=2,
                     persistence=0.1,
-                    coordinates=(x / 15, y / 15, seed)
+                    coordinates=(x / 40, y / 40, seed)
                 )
             )
 
@@ -64,17 +65,33 @@ def generate_terrain(dimensions, zone_size=15, spawn_range=50, seed=None):
             # This is all ad-hoc. Not a lot of thought went into the math.
 
             # check if the coordinates are within the spawn range (pythagoras theorem)
-            max_noise_range = 0.2
-            within_spawn_range = spawn_range < math.sqrt((x - map_middle) ** 2 + (y - map_middle) ** 2)
+            max_noise_range = 0.15
+            within_spawn_range = spawn_range > math.sqrt((x - map_middle) ** 2 + (y - map_middle) ** 2)
             if within_spawn_range:
-                max_noise_range = ((x ** 2) / 16 + (y ** 2) / 16) / 1000
+                max_noise_range /= 2
+                # max_noise_range = ((x ** 2) / 16 + (y ** 2) / 16) / 100000
             river_val = noise_octave(
                 noise_func=noise.snoise3,
                 octaves=1,
-                persistence=2,
-                coordinates=(x / 15, y / 15, seed)
+                persistence=0.1,
+                coordinates=(x / 50, y / 50, seed)
             )
 
             if max_noise_range > river_val > 0.0:
                 map[y][x] = "W"
-    return map
+
+            # For cities, we will base it off the river noise (cities are typically close to water bodies).
+            # But since we don't want cities everywhere, we will do a noise cross between the river noise
+            # and a new noise (nRiver X nCities) = nCoastCities.
+
+            city_val = noise_octave(
+                noise_func=noise.snoise3,
+                octaves=2,
+                persistence=0.2,
+                coordinates=(x / 30, y / 30, seed)
+            )
+
+            if max_noise_range + 0.2 > river_val > max_noise_range > city_val > 0:
+                features[y][x] = "fC"
+
+    return map, features
