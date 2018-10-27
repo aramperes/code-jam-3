@@ -17,8 +17,10 @@ from gateway.net.registry import INBOUND_REGISTRY
 
 class GatewayHost(CommonServerHost):
 
-    def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool):
+    def __init__(self, host: str, port: int, redis_pool: redis.ConnectionPool, transfer_url: str):
         super().__init__(host, port, redis_pool, INBOUND_REGISTRY)
+        self._transfer_url = transfer_url
+
         from gateway.net.player_connection import PlayerConnection
         self._PlayerConnectionType = PlayerConnection
 
@@ -93,7 +95,7 @@ class GatewayHost(CommonServerHost):
         async def send_goodbye():
             # todo: make target URL configurable
             connection.upgrade(state.TRANSFERRED)
-            await connection.send(LobbyTransferMessage(target="ws://localhost:8082/", track_token="todo"))
+            await connection.send(LobbyTransferMessage(target=self._transfer_url, track_token="todo"))
             # At this point, the client cannot do anything except disconnect.
 
         asyncio.new_event_loop().run_until_complete(

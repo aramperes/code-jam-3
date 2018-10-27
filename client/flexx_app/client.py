@@ -114,7 +114,7 @@ class Client(flx.Component):
             if op == "lobby:transfer":
                 target_url = payload["target"]
                 track_token = payload["token"]
-                self.transfer_to(url=target_url, track_token=track_token)
+                self.transfer_to(target_url, track_token)
                 return
 
         return call

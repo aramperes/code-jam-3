@@ -13,7 +13,8 @@ redis_pool = redis.ConnectionPool(
 gateway_host = GatewayHost(
     redis_pool=redis_pool,
     host=os.getenv("GATEWAY_HOST", None),
-    port=int(os.getenv("GATEWAY_PORT", 5000))
+    port=int(os.getenv("GATEWAY_PORT", 5000)),
+    transfer_url=os.getenv("GATEWAY_TRANSFER_TARGET", "ws://localhost:8080/game/")
 )
 
 
