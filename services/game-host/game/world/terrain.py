@@ -1,7 +1,7 @@
+import math
 import random
 from typing import Tuple
 
-import math
 import noise
 
 ZONES = {
@@ -28,7 +28,7 @@ def noise_octave(noise_func=None, octaves: int = 1, persistence: float = 1.0, co
     frequency = 1.0
     amplitude = 1.0
     max_value = 0.0
-    for octave_index in range(octaves):
+    for _ in range(octaves):
         noise_value = noise_func(*tuple(coord * frequency for coord in coordinates)) * amplitude
         total += noise_value
         max_value += amplitude
