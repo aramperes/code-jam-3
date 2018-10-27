@@ -77,3 +77,7 @@ class LobbyViewWidget(flx.Widget):
             self.set_ready(False)
         else:
             self.set_ready(True)
+
+    @flx.reaction("quit_button.pointer_click")
+    def _on_quit_button_click(self, *events):
+        self.client.quit_lobby()

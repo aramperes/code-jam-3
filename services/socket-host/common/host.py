@@ -109,7 +109,8 @@ class CommonServerHost:
                 continue
             channel = message["channel"].decode("utf-8")
             with threading.Lock():
-                for handler in self._redis_channels[channel]:
+                receipts_for = set(self._redis_channels[channel])
+                for handler in receipts_for:
                     handler: RedisChannelReceipt = handler
                     handler.func.__call__(message)
 

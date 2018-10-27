@@ -191,5 +191,6 @@ class LobbyListParentWidget(flx.Widget):
 
     @flx.reaction("client.on_lobby_leave")
     def _on_lobby_leave(self, *events):
-        # todo
+        self._close_view_ui()
+        self._show_list_ui()
         print("Going back to lobby list")

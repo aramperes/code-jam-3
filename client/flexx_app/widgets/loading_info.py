@@ -8,7 +8,7 @@ class LoadingInfoWidget(flx.Widget):
 
     def init(self):
         css_visible(self, self.visible)
-        self.status_label = flx.Label(text="Connecting to game server...")
+        self.status_label = flx.Label(text="Connecting to gateway server...")
 
     def set_status(self, status: str):
         self.status_label.set_text(status)

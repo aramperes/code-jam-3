@@ -130,6 +130,11 @@ class Client(flx.Component):
     def current_lobby_update(self, lobby_obj):
         return dict(lobby_obj=lobby_obj)
 
+    def quit_lobby(self):
+        if self.current_lobby_id:
+            self.send("lobby:quit", {})
+            self.__set_current_lobby_id(None)
+
     @flx.action
     def __set_current_lobby_id(self, lobby_id):
         self._mutate_current_lobby_id(lobby_id)

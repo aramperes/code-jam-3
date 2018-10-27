@@ -22,6 +22,7 @@ from gateway.net.lobby.chat_broadcast import LobbyChatBroadcastMessage
 from gateway.net.lobby.config import LobbyConfigMessage
 from gateway.net.lobby.config_response import LobbyConfigResponseMessage
 from gateway.net.lobby.join_response import LobbyJoinResponseMessage
+from gateway.net.lobby.quit import LobbyQuitMessage
 from gateway.net.lobby.set_state import LobbySetStateMessage
 from gateway.net.lobby.update_list import LobbyUpdateListMessage
 from gateway.net.lobby.user_ready import LobbyUserReadyMessage
@@ -255,6 +256,13 @@ class PlayerConnection(CommonSocketConnection):
                         break
                 self._edit_and_publish_lobby_state(lobby_state)
                 # todo: check if all players are ready, and transfer connections to game-host
+                return
+
+            if isinstance(message, LobbyQuitMessage):
+                message: LobbyQuitMessage = message
+                self._leave_lobby(self._current_lobby_id)
+                self.downgrade(st.LOBBY_LIST)
+                return
 
         print(f"Received a message unknown message or invalid state, state={self.state.state_id}, op={message.op}")
 
@@ -305,7 +313,7 @@ class PlayerConnection(CommonSocketConnection):
         return f"{self.user_name}#{self.user_discrim}"
 
     def handle_state_change(self, old_state: st.State, new_state: st.State):
-        if new_state == st.LOBBY_LIST or new_state == st.LOBBY_VIEW and self._handler_lobby_list is None:
+        if (new_state == st.LOBBY_LIST or new_state == st.LOBBY_VIEW) and self._handler_lobby_list is None:
             # Subscribe to lobby list updates
             self._handler_lobby_list = self.host.redis_channel_sub(
                 channels.CHANNEL_LOBBY_LIST,

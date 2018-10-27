@@ -44,7 +44,6 @@ class LobbyChatParentWidget(flx.Widget):
             user_name = event["user_name"]
             chat_message = event["chat_message"]
             is_self = (user_name == self.client.username)
-            print(chat_message, user_name, is_self)
             ChatMessage(
                 parent=self.history_container,
                 user_name=user_name,

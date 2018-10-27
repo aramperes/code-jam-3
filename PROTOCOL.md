@@ -192,8 +192,6 @@
 
 ### `c-s lobby:quit`
 
-  **Not currently implemented.**
-
   **Payload**: *none*
 
 ### `s-c lobby:transfer`
