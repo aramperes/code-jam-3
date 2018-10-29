@@ -1,56 +1,68 @@
-
-
 var jdCanvas = document.getElementsByTagName('canvas')[0];
 var renderer = PIXI.autoDetectRenderer(800, 600, {backgroundColor: 0xffffff,
     antialias: true, view:jdCanvas});
 
 
-var stage = createStage();
+var stage = new PIXI.Container(); // main
+var world = createWorld();
+stage.addChild(world);
 
 var mapper;
 
 var loader = new PIXI.loaders.Loader();
-loader.add('atlas', 'basic/atlas.json')
-        .add('tiles', "imgs/sprite/tiles2.json")
-        .add('walk', "imgs/spritesheets/walkb.json");
+loader.add('tiles', "img/tiles2.json")
+        .add('walk', "img/spritesheets/walkb.json");
 loader.load(setup);
 
 function setup (loader, resources) {
 	 
     var tilemap = createMap();
-    stage.addChild(tilemap);
+    var animChar = createChar();
+    world.addChild(tilemap);
+    world.addChild(animChar);
     createChar();
 
     runGame();
 }
+var worldWidth = 3000,
+worldHeight = 3000;
 
-function createStage(){
-    var stage = new PIXI.Container();
-    // stage.interactive = true;
-    stage.scale.x = 1;
-    stage.scale.y = 1;
-
-
-    return stage;
+function createWorld(){
+    var viewportWorld = new PIXI.extras.Viewport({
+        // var viewport = new Viewport({
+            screenWidth: renderer.screen.width,
+            screenHeight: renderer.screen.height,
+            worldWidth: worldWidth,
+            worldHeight: worldHeight,
+        
+            interaction: renderer.interaction  // the interaction module is important for wheel() to work properly when renderer.view is placed or scaled
+        });
+    viewportWorld
+        .drag()
+        .pinch()
+        .wheel()
+        .decelerate();
+        viewportWorld.scale.set(0.5);
+        
+    return viewportWorld;
 }
 
 function createMap(){
     
     var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
-    maplength = 84 // number of tiles for length of map 2688px
-    mapwidth = 63 // number of tiles for width of map 2688px
+    maplength = 84 /3 // number of tiles for length of map 2688px
+    mapwidth = 63 / 3 // number of tiles for width of map 2688px
     
     // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
     var size = 32;
     // bah, im too lazy, i just want to specify filenames from atlas
-    for (var i = 0 ; i < maplength; i++) 
+    for (var i = 0 ; i < maplength; i++) {
         for (var j = 0 ;j < mapwidth; j++) {
             tilemap.addFrame("sandtile_1.png", i*size, j*size);
             if (i%2==1 && j%2==1)
                 tilemap.addFrame("snowtile_2.png", i*size, j*size);
         }
-
-        // addInteraction(tilemap);
+    }
 
     return tilemap;
 }
@@ -70,16 +82,15 @@ function createChar(){
     animCharSprite.anchor.set(0.5);
     // animCharSprite.gotoAndPlay(0.0000009);
     animCharSprite.scale.set(1);
+    animCharSprite.click = () => {
+        alert("I am walkin here!!!");
+    }
 
-    animCharSprite.interactive = true;
-    
-    animCharSprite
-        .on('pointerdown', onDragStart)
-        .on('pointerup', onDragEnd)
-        .on('pointerupoutside', onDragEnd)
-        .on('pointermove', onDragMove);
+    animCharSprite.buttonMode = true;
 
-    stage.addChild(animCharSprite);
+    setInteractOb(animCharSprite);
+
+    return(animCharSprite);
 }
 
 
@@ -90,6 +101,15 @@ function runGame() {
 
 
 // === INTERACTION CODE  ===
+
+function setInteractOb(obj){
+    obj.interactive = true
+    obj.on('pointerdown', onDragStart)
+        .on('pointerup', onDragEnd)
+        .on('pointerupoutside', onDragEnd)
+        .on('pointermove', onDragMove);
+    return obj;
+}
 
 function onDragStart(event) {
     // store a reference to the data
