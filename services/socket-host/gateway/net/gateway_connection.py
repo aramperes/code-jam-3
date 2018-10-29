@@ -28,7 +28,7 @@ from gateway.net.lobby.update_list import LobbyUpdateListMessage
 from gateway.net.lobby.user_ready import LobbyUserReadyMessage
 
 
-class PlayerConnection(CommonSocketConnection):
+class GatewayConnection(CommonSocketConnection):
     def __init__(self, host: GatewayHost, websocket: websockets.WebSocketServerProtocol, session_token: str):
         super().__init__(host, websocket, session_token)
 

@@ -21,8 +21,8 @@ class GatewayHost(CommonServerHost):
         super().__init__(host, port, redis_pool, INBOUND_REGISTRY)
         self._transfer_url = transfer_url
 
-        from gateway.net.player_connection import PlayerConnection
-        self._PlayerConnectionType = PlayerConnection
+        from gateway.net.gateway_connection import GatewayConnection
+        self._GatewayConnectionType = GatewayConnection
 
     async def post_handle_new_connection(self, connection):
         await connection.send(
@@ -30,14 +30,13 @@ class GatewayHost(CommonServerHost):
         )
 
     def create_socket_connection_object(self, websocket: websockets.WebSocketServerProtocol, session_token: str):
-        return self._PlayerConnectionType(
+        return self._GatewayConnectionType(
             host=self,
             websocket=websocket,
             session_token=session_token
         )
 
     def handle_redis_init(self):
-        self._redis_pubsub_connection.subscribe(namespaced("channel:dummy"))
         self._init_lobby_cleanup_job()
 
     def _init_lobby_cleanup_job(self):
