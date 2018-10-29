@@ -1,42 +1,33 @@
 {"frames": {
     "sandtile_1.png": {
-        "frame": {"x":0,"y":0,"w":100,"h":100},
+        "frame": {"x":0,"y":0,"w":32,"h":32},
         "rotated": false,
         "trimmed": false,
-        "spriteSourceSize": {"x":0,"y":0,"w":100,"h":100},
-        "sourceSize": {"w":100,"h":100},
-        "pivot": {"x":0.5,"y":0.5}
-    },
-
-    "snowtile_1.png": {
-        "frame": {"x":100,"y":0,"w":100,"h":100},
-        "rotated": false,
-        "trimmed": false,
-        "spriteSourceSize": {"x":0,"y":0,"w":100,"h":100},
-        "sourceSize": {"w":100,"h":100},
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
         "pivot": {"x":0.5,"y":0.5}
     },
 
     "sandtile_2.png": {
-        "frame": {"x":200,"y":0,"w":100,"h":100},
+        "frame": {"x":32,"y":0,"w":32,"h":32},
         "rotated": false,
         "trimmed": false,
-        "spriteSourceSize": {"x":0,"y":0,"w":100,"h":100},
-        "sourceSize": {"w":100,"h":100},
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
+        "pivot": {"x":0.5,"y":0.5}
+    },
+
+    "snowtile_1.png": {
+        "frame": {"x":64,"y":0,"w":32,"h":32},
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
         "pivot": {"x":0.5,"y":0.5}
     },
 
     "snowtile_2.png": {
-        "frame": {"x":300,"y":0,"w":100,"h":100},
-        "rotated": false,
-        "trimmed": false,
-        "spriteSourceSize": {"x":0,"y":0,"w":100,"h":100},
-        "sourceSize": {"w":100,"h":100},
-        "pivot": {"x":0.5,"y":0.5}
-    },
-
-    "grass.png": {
-        "frame": {"x":35,"y":0,"w":32,"h":32},
+        "frame": {"x":96,"y":0,"w":32,"h":32},
         "rotated": false,
         "trimmed": false,
         "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
@@ -48,7 +39,7 @@
     "meta":  {
         "app": "To Be updated",
         "version": "1.0",
-        "image": "tiles.png",
+        "image": "tiles2.png",
         "format": "RGBA8888",
         "size": {"w":400,"h":108},
         "scale": "1",

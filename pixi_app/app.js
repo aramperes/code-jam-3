@@ -1,111 +1,71 @@
-var resolutionX = 800;
-var resolutionY = 600;
-var tileSizeX = 100;
-var tileSizeY = 100;
+var canvas = document.getElementsByTagName('canvas')[0];
+var renderer = PIXI.autoDetectRenderer(800, 600, {view:canvas});
+var stage = createStage();
 
-var groundTileMap;
-var playerSprite;
-var playerOffsetX = (resolutionX / 2 - 24);
-var playerOffsetY = (resolutionY / 2 - 24);
+var mapper;
 
-var player = {
-    x: 0,
-    y: 0
-};
+var loader = new PIXI.loaders.Loader();
+loader.add('tiles', "img/tiles2.json")
+    .load(setup);
 
+function setup (loader, resources) {
+	 
+    var tilemap = createMap();
+    stage.addChild(tilemap);
 
-var app = new PIXI.Application(resolutionX, resolutionY);
-document.body.appendChild(app.view);
-
-PIXI.loader
-        .add("img/imgTanks.png")
-        .add('tiles', "img/tiles.json")
-        .load(setup);
-
-
-function setup(loader, resources){
-    // Create our tile map based on the ground texture
-    // groundTiles = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['imgs/imgGround.png']);
-    // groundTileMap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache[resources['sand_2']]);
-    groundTileMap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['tiles_image'].texture]);
-
-    // var sand_2 = resources['sand_2'];
-    drawGround("snowtile_1.png");
-
-    app.stage.addChild(groundTileMap);
-
-    var tankTexture = new PIXI.Texture(
-        PIXI.utils.TextureCache['imgs/imgTanks.png'],
-        new PIXI.Rectangle(0 * 48, 0, 48, 48)
-    );
-
-    var player1 = createPlayerSprite(tankTexture);
-
-
-    runGameLoop();
+    runGame();
 }
 
-// create grounds for snow, desert, forest, and others
-function drawGround(groundImangeTexture){
-
-    // set number of tiles needed for the window
-    var numberOfTiles = parseInt(resolutionX / tileSizeX) + 10;
-
-    var groundOffsetX = player.x % 100; // Number of tank tiles on x axis
-    var groundOffsetY = player.y % 100; // Number of tank tiles on y axis
-
-    // creating floor by adding tiles to ground frame!
-    for (var i = -numberOfTiles; i <= numberOfTiles; i++) {
-        for (var j = -numberOfTiles; j <= numberOfTiles; j++) {
-            groundTileMap.addFrame(groundImangeTexture, i * tileSizeX, j * tileSizeY);
-        }
-    }
-
+function createStage(){
+    var stage = new PIXI.Container();
+    // stage.interactive = true;
+    stage.scale.x = 1;
+    stage.scale.y = 1;
+    return stage;
 }
 
-
-function createPlayerSprite(texture){
-    playerSprite = new PIXI.Sprite(texture);
-    playerSprite.x = playerOffsetX;
-    playerSprite.y = playerOffsetY;
-
-    app.stage.addChild(playerSprite);
-    playerSprite.interactive = true;
-
-    playerSprite.click = () => {
-        alert("I am working!");
-    }
+function createMap(){ //tentative map
     
-    return playerSprite;
+    var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
+    
+    // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
+    var size = 32;
+    // bah, im too lazy, i just want to specify filenames from atlas
+    for (var i=0;i<21;i++)
+        for (var j=0;j<9;j++) {
+            tilemap.addFrame("sandtile_1.png", i*size, j*size);
+            if (i%2==1 && j%2==1)
+                tilemap.addFrame("snowtile_2.png", i*size, j*size);
+        }
+
+    return tilemap;
 }
 
-
-// run game loop
-function runGameLoop() {
-
-    groundTileMap.pivot.set(player.x, player.y);
-    requestAnimationFrame(runGameLoop);
+function runGame() {
+    renderer.render(stage);
+    requestAnimationFrame(runGame);
 }
 
+function onDragStart(event) {
+    // store a reference to the data
+    // the reason for this is because of multitouch
+    // we want to track the movement of this particular touch
+    this.data = event.data;
+    this.alpha = 0.5;
+    this.dragging = true;
+}
 
- // set movements via keys aswd and arrows
-document.addEventListener('keydown', (e) => {    
+function onDragEnd() {
+    this.alpha = 1;
+    this.dragging = false;
+    // set the interaction data to null
+    this.data = null;
+}
 
-     if (e.keyCode == '38' || e.keyCode == '87') {
-        // up arrow or w  => move forward 
-        player.y -= 10;
+function onDragMove() {
+    if (this.dragging) {
+        var newPosition = this.data.getLocalPosition(this.parent);
+        this.x = newPosition.x;
+        this.y = newPosition.y;
     }
-    else if (e.keyCode == '40' || e.keyCode == '83') {
-        // down arrow or s => move backwards
-        player.y += 10;
-    }
-    else if (e.keyCode == '37' || e.keyCode == '65') {
-       // left arrow or a => move to the left
-       player.x -= 10;
-    }
-    else if (e.keyCode == '39' || e.keyCode == '68') {
-       // right arrow or d => move to the right
-       player.x += 10;
-    }
-  });
-
+}
