@@ -7,12 +7,12 @@
 ```json
 {
   "op": "<protocol>:<action>",
-  "session": "<session token given by server>",
+  "session": "<session token given by gateway>",
   "payload": { }
 }
 ```
 
-## `handshake`
+## `handshake` (gateway)
 
 ### `s-c handshake:ready`
   **Payload**:
@@ -75,7 +75,7 @@
 
 **Payload**: *none*
 
-## `lobby`
+## `lobby` (gateway)
 
 ### `c-s lobby:set_state`
 
@@ -205,3 +205,90 @@
     "track_token": "<token defined by the target>"
   }
   ```
+
+## `delivery` (game)
+
+ The `delivery` protocol is the game-host's side of the transfer procedure. Since the game-host needs
+ the gateway-host to notify the game-host first, the game-host will wait until it is notified of the session.
+ 
+### `c-s delivery:identify`
+
+ Identifies the client's gateway session to the game-host.
+ 
+ **Payload**: *none*
+ 
+### `s-c delivery:waiting`
+
+ Notifies to the client that the game-host is waiting for approval from the gateway-host.
+ Should be sent immediately after receiving the `delivery:identify` message.
+
+ **Payload**: *none*
+ 
+### `s-c delivery:upgrade`
+
+ Notifies to the client that the game-host confirmed the client's identify, and will
+ send more information soon.
+
+ **Payload**: *none*
+
+## `world` (game)
+
+### `s-c world:init`
+
+ Informs the client about the game/world's initial setup.
+ 
+ ```json
+  {
+    "terrain": {
+      "pieces": 25,
+      "piece_size": 50
+    }
+  }
+ ```
+
+### `s-c world:entities`
+
+  Adds and/or deletes a bulk of entities.
+  
+  ```json
+  {
+    "entities": [
+      {
+        "id": "<uuid>",
+        "type": "player/prop/...",
+        "data": { },
+        "action": "add/del"
+      }
+    ]
+  }
+  ```
+
+### `s-c world:terrain`
+
+ Terrain is split in equal pieces, defined in the `world:init` message.
+
+  ```json
+  {
+    "pos": {"x": 0, "y": 0},
+    "data": ["X", "X", "X..."]
+  }
+ ```
+
+### `s-c world:entity_data`
+
+ Updates the data of a single entity. The `append` property defines whether the entity's current data
+ should be replaced (false) or appended (true).
+
+  ```json
+  {
+    "id": "<uuid>",
+    "data": { },
+    "append": true
+  }
+  ```
+
+### `s-c world:ready`
+
+ Notifies the client that the world is ready to be used/played.
+ 
+ **Payload**: *none*
