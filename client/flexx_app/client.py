@@ -1,5 +1,5 @@
 from flexx import flx
-from pscript.stubs import JSON
+from pscript.stubs import JSON, RawJS
 
 from flexx_app import ws, storage, timer
 
@@ -17,6 +17,9 @@ class Client(flx.Component):
 
         self.socket = ws.create_websocket_connection(ws_url, self._ws_gateway_callback())
         self.track_token = None
+
+        self._piece_count = 0
+        self._expected_piece_count = None
 
     def send(self, op, payload):
         print(" < " + op + " " + JSON.stringify(payload))
@@ -193,7 +196,21 @@ class Client(flx.Component):
                 return
 
             if op == "delivery:upgrade":
-                self.base.set_loading_status("Successfully connected to game host! :)")
+                self.base.set_loading_status("Connected to game host, waiting for world...")
+                return
+
+            if op == "world:init":
+                self._expected_piece_count = payload["terrain"]["pieces"] ** 2
+                self.base.set_loading_status("Loading terrain (0%)...")
+                return
+
+            if op == "world:terrain":
+                # todo save terrain locally
+                self._piece_count += 1
+                loading_percentage = self._piece_count / self._expected_piece_count * 100
+                print(self._piece_count, self._expected_piece_count, loading_percentage)
+                loading_percentage = RawJS("Math.round(loading_percentage);")
+                self.base.set_loading_status("Loading terrain (" + str(loading_percentage) + "%)...")
                 return
 
         return call

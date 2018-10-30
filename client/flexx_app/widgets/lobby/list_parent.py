@@ -58,6 +58,7 @@ class LobbyListParentWidget(flx.Widget):
     def _cancel_create_menu(self):
         if not self.create_menu:
             return
+        self._create_buttons_disabled(False)
         self.create_action_button_group.apply_style({"display": "none"})
         self.create_menu.dispose()
         self.create_menu = None

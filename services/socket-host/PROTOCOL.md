@@ -253,7 +253,7 @@
   {
     "terrain": {
       "pieces": 25,
-      "piece_size": 50
+      "piece_size": 10
     }
   }
  ```
@@ -281,8 +281,9 @@
 
   ```json
   {
-    "pos": {"x": 0, "y": 0},
-    "data": ["X", "X", "X..."]
+    "piece": {"x": 0, "y": 0},
+    "terrain": ["X", "X", "X..."],
+    "features": ["", "", "..."]
   }
  ```
 
