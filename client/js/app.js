@@ -1,3 +1,8 @@
+window["run_pixi_app"] = function() {
+var PIXI = require('pixi.js');
+var Viewport = require('pixi-viewport');
+var PIXI_tilemap = require('pixi-tilemap');
+
 var jdCanvas = document.getElementsByTagName('canvas')[0];
 var renderer = PIXI.autoDetectRenderer(800, 600, {backgroundColor: 0xffffff,
     antialias: true, view:jdCanvas});
@@ -28,7 +33,7 @@ var worldWidth = 3000,
 worldHeight = 3000;
 
 function createWorld(){
-    var viewportWorld = new PIXI.extras.Viewport({
+    var viewportWorld = new Viewport({
         // var viewport = new Viewport({
             screenWidth: renderer.screen.width,
             screenHeight: renderer.screen.height,
@@ -133,4 +138,5 @@ function onDragMove() {
         this.x = newPosition.x;
         this.y = newPosition.y;
     }
+}
 }

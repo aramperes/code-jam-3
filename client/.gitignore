@@ -1,5 +1,7 @@
 .idea/
 *.iml
 __pycache__/
+node_modules/
+js/dist/
 
 project/templates/_flexx_output.html
