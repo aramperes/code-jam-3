@@ -6,10 +6,11 @@ import time
 import uuid
 
 import websockets
+from common import channels
 from common.namespace import namespaced
 from common.net.connection import CommonSocketConnection
 from common.net.message import InboundMessage
-from gateway import GatewayHost, channels
+from gateway import GatewayHost
 from gateway.lobby import LobbyState, LobbyUser
 from gateway.net import state as st, validator
 from gateway.net.handshake.identify import HandshakeIdentifyMessage
@@ -28,7 +29,7 @@ from gateway.net.lobby.update_list import LobbyUpdateListMessage
 from gateway.net.lobby.user_ready import LobbyUserReadyMessage
 
 
-class PlayerConnection(CommonSocketConnection):
+class GatewayConnection(CommonSocketConnection):
     def __init__(self, host: GatewayHost, websocket: websockets.WebSocketServerProtocol, session_token: str):
         super().__init__(host, websocket, session_token)
 

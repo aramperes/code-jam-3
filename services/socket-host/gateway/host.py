@@ -1,14 +1,15 @@
 import asyncio
 import json
+import secrets
 import threading
 import time
 
 import redis
 import websockets
+from common import channels
 from common.host import CommonServerHost
 from common.namespace import namespaced
 from common.net.connection import CommonSocketConnection
-from gateway import channels
 from gateway.net import state
 from gateway.net.handshake.ready import HandshakeReadyMessage
 from gateway.net.lobby.transfer import LobbyTransferMessage
@@ -21,8 +22,8 @@ class GatewayHost(CommonServerHost):
         super().__init__(host, port, redis_pool, INBOUND_REGISTRY)
         self._transfer_url = transfer_url
 
-        from gateway.net.player_connection import PlayerConnection
-        self._PlayerConnectionType = PlayerConnection
+        from gateway.net.gateway_connection import GatewayConnection
+        self._GatewayConnectionType = GatewayConnection
 
     async def post_handle_new_connection(self, connection):
         await connection.send(
@@ -30,14 +31,13 @@ class GatewayHost(CommonServerHost):
         )
 
     def create_socket_connection_object(self, websocket: websockets.WebSocketServerProtocol, session_token: str):
-        return self._PlayerConnectionType(
+        return self._GatewayConnectionType(
             host=self,
             websocket=websocket,
             session_token=session_token
         )
 
     def handle_redis_init(self):
-        self._redis_pubsub_connection.subscribe(namespaced("channel:dummy"))
         self._init_lobby_cleanup_job()
 
     def _init_lobby_cleanup_job(self):
@@ -93,10 +93,19 @@ class GatewayHost(CommonServerHost):
 
     def transfer_to_game_host(self, connection: CommonSocketConnection):
         async def send_goodbye():
-            # todo: make target URL configurable
-            connection.upgrade(state.TRANSFERRED)
-            await connection.send(LobbyTransferMessage(target=self._transfer_url, track_token="todo"))
+            track_token = secrets.token_urlsafe(32)
+            self.redis().pipeline() \
+                .set(namespaced(f"transfer:{track_token}"), connection.name_with_discrim) \
+                .publish(channels.CHANNEL_TRANSFER,
+                         json.dumps({
+                             "username": connection.name_with_discrim,
+                             "track_token": track_token
+                         })
+                         ) \
+                .execute()
             # At this point, the client cannot do anything except disconnect.
+            connection.upgrade(state.TRANSFERRED)
+            await connection.send(LobbyTransferMessage(target=self._transfer_url, track_token=track_token))
 
         asyncio.new_event_loop().run_until_complete(
             send_goodbye()

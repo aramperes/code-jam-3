@@ -10,6 +10,7 @@ from typing import Dict
 
 import redis
 import websockets
+from common.namespace import namespaced
 from common.net.message import InboundMessage
 from common.net.registry import BaseInboundRegistry
 from common.redis_handler import RedisChannelReceipt
@@ -101,6 +102,7 @@ class CommonServerHost:
     def _redis_pubsub_loop(self):
         redis_connection = self.redis()
         self._redis_pubsub_connection = redis_connection.pubsub()
+        self._redis_pubsub_connection.subscribe(namespaced("channel:dummy"))
         self.handle_redis_init()
 
         while self._redis_thread_kill_queue.empty():

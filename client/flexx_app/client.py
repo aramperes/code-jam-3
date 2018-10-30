@@ -16,6 +16,7 @@ class Client(flx.Component):
         self._username_prompt_transaction = None
 
         self.socket = ws.create_websocket_connection(ws_url, self._ws_gateway_callback())
+        self.track_token = None
 
     def send(self, op, payload):
         print(" < " + op + " " + JSON.stringify(payload))
@@ -27,10 +28,10 @@ class Client(flx.Component):
 
     def _ws_gateway_callback(self):
         def call(msg):
+            print(" > " + msg["data"])
             frame = JSON.parse(msg["data"])
             op = frame["op"]
             payload = frame["payload"]
-            print(" > " + op + " " + JSON.stringify(payload))
 
             if op == "handshake:ready":
                 token = None
@@ -113,7 +114,7 @@ class Client(flx.Component):
 
             if op == "lobby:transfer":
                 target_url = payload["target"]
-                track_token = payload["token"]
+                track_token = payload["track_token"]
                 self.transfer_to(target_url, track_token)
                 return
 
@@ -176,12 +177,29 @@ class Client(flx.Component):
     def _ws_game_callback(self):
         def call(msg):
             frame = JSON.parse(msg["data"])
-            print("Received frame from game host")
-            print(frame)
+            op = frame["op"]
+            payload = frame["payload"]
+            print(" > " + op + " " + JSON.stringify(payload))
+
+            if op == "delivery:ready":
+                self.session_token = frame["session"]
+
+                # send track token
+                self.send("delivery:identify", {"track_token": self.track_token})
+                return
+
+            if op == "delivery:waiting":
+                self.base.set_loading_status("Waiting for game host identification...")
+                return
+
+            if op == "delivery:upgrade":
+                self.base.set_loading_status("Successfully connected to game host! :)")
+                return
 
         return call
 
     def transfer_to(self, url, track_token):
+        self.track_token = track_token
         self.base.lobby_parent.dispose()
         self.base.lobby_parent = None
 

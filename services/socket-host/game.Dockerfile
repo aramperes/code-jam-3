@@ -6,4 +6,4 @@ RUN pip install pipenv
 RUN pipenv lock
 RUN pipenv sync
 
-CMD pipenv run python3 . --gateway
+CMD pipenv run python3 . --game
