@@ -69,7 +69,8 @@ class GatewayHost(CommonServerHost):
 
             # check if lobby is empty
             if len(lobby_obj["players"]) == 0:
-                self.redis().delete(namespaced(f"lobby:{lobby_id}"))
+                # print("Deleting empty lobby", lobby_id)
+                # self.redis().delete(namespaced(f"lobby:{lobby_id}"))
                 return
 
             # check if all players are ready
@@ -94,14 +95,19 @@ class GatewayHost(CommonServerHost):
     def transfer_to_game_host(self, connection: CommonSocketConnection):
         async def send_goodbye():
             track_token = secrets.token_urlsafe(32)
+            lobby_id = connection.current_lobby_id
+            name_with_discrim = connection.name_with_discrim
+
+            transfer_data = {
+                "username": name_with_discrim,
+                "track_token": track_token,
+                "lobby_id": lobby_id
+            }
+            transfer_json = json.dumps(transfer_data)
+
             self.redis().pipeline() \
-                .set(namespaced(f"transfer:{track_token}"), connection.name_with_discrim) \
-                .publish(channels.CHANNEL_TRANSFER,
-                         json.dumps({
-                             "username": connection.name_with_discrim,
-                             "track_token": track_token
-                         })
-                         ) \
+                .set(namespaced(f"transfer:{track_token}"), transfer_json) \
+                .publish(channels.CHANNEL_TRANSFER, transfer_json) \
                 .execute()
             # At this point, the client cannot do anything except disconnect.
             connection.upgrade(state.TRANSFERRED)

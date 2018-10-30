@@ -1,7 +1,7 @@
 import itertools
 import json
 
-from gateway.world import terrain
+from game.world import terrain
 
 dim = 200
 map, features = terrain.generate_terrain(dim)
