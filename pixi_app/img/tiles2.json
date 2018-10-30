@@ -1,0 +1,48 @@
+{"frames": {
+    "sandtile_1.png": {
+        "frame": {"x":0,"y":0,"w":32,"h":32},
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
+        "pivot": {"x":0.5,"y":0.5}
+    },
+
+    "sandtile_2.png": {
+        "frame": {"x":32,"y":0,"w":32,"h":32},
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
+        "pivot": {"x":0.5,"y":0.5}
+    },
+
+    "snowtile_1.png": {
+        "frame": {"x":64,"y":0,"w":32,"h":32},
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
+        "pivot": {"x":0.5,"y":0.5}
+    },
+
+    "snowtile_2.png": {
+        "frame": {"x":96,"y":0,"w":32,"h":32},
+        "rotated": false,
+        "trimmed": false,
+        "spriteSourceSize": {"x":0,"y":0,"w":32,"h":32},
+        "sourceSize": {"w":32,"h":32},
+        "pivot": {"x":0.5,"y":0.5}
+    }
+},
+
+    "meta":  {
+        "app": "To Be updated",
+        "version": "1.0",
+        "image": "tiles2.png",
+        "format": "RGBA8888",
+        "size": {"w":400,"h":108},
+        "scale": "1",
+        "smartupdate": "$TexturePacker:SmartUpdate:cd0d17d3f8965456a92be15158a0ed9e:d14942d54a3d3385fdb15258e1ae1a8f:cbce6b53f0f49e0bf15173c25c41f876$"
+    }
+}

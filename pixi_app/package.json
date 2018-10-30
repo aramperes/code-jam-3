@@ -1,0 +1,29 @@
+{
+  "name": "discordPy-jamGraphcs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "browser-sync start --server --files '*.js'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jodth07/discordPy-jamGraphcs.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jodth07/discordPy-jamGraphcs/issues"
+  },
+  "homepage": "https://github.com/jodth07/discordPy-jamGraphcs#readme",
+  "dependencies": {
+    "pixi-tilemap": "^1.2.4",
+    "pixi-viewport": "^3.9.0",
+    "pixi.js": "^4.8.2"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.26.3"
+  }
+}
