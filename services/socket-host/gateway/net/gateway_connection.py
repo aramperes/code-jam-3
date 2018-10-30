@@ -6,10 +6,11 @@ import time
 import uuid
 
 import websockets
+from common import channels
 from common.namespace import namespaced
 from common.net.connection import CommonSocketConnection
 from common.net.message import InboundMessage
-from gateway import GatewayHost, channels
+from gateway import GatewayHost
 from gateway.lobby import LobbyState, LobbyUser
 from gateway.net import state as st, validator
 from gateway.net.handshake.identify import HandshakeIdentifyMessage

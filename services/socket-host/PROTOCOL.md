@@ -210,12 +210,24 @@
 
  The `delivery` protocol is the game-host's side of the transfer procedure. Since the game-host needs
  the gateway-host to notify the game-host first, the game-host will wait until it is notified of the session.
- 
+
+### `s-c delivery:ready`
+
+ This message effectively updates the session token on the client side to the game's token.
+
+ **Payload**: none
+
 ### `c-s delivery:identify`
 
  Identifies the client's gateway session to the game-host.
  
- **Payload**: *none*
+ **Payload**: 
+ 
+  ```json
+  {
+    "track_token": "<track token from gateway>"
+  }
+  ```
  
 ### `s-c delivery:waiting`
 
