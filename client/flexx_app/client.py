@@ -19,7 +19,6 @@ class Client(flx.Component):
         self.track_token = None
 
     def send(self, op, payload):
-        print(payload)
         print(" < " + op + " " + JSON.stringify(payload))
         self.socket.send(JSON.stringify({
             "op": op,
