@@ -109,3 +109,5 @@ venv.bak/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+docker-compose-prod.yml
+services/nginx/nginx.prod.conf
