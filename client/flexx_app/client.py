@@ -223,13 +223,14 @@ class Client(flx.Component):
                 base_tile_x = self._world_piece_size * piece_x
                 base_tile_y = self._world_piece_size * piece_y
 
+                payload_index = 0
                 for tile_x_rel in range(0, self._world_piece_size):
                     for tile_y_rel in range(0, self._world_piece_size):
                         tile_x = tile_x_rel + base_tile_x
                         tile_y = tile_y_rel + base_tile_y
 
-                        payload_index = tile_y + tile_x * self._world_piece_size
                         self._world[tile_x][tile_y] = payload["terrain"][payload_index]
+                        payload_index += 1
 
                 self._piece_count += 1
                 loading_percentage = self._piece_count / self._expected_piece_count * 100
@@ -238,7 +239,8 @@ class Client(flx.Component):
                 return
 
             if op == "world:ready":
-
+                client_instance = self
+                RawJS("window['client_instance'] = client_instance;")
                 self.base.create_canvas()
 
                 RawJS(
@@ -246,13 +248,17 @@ class Client(flx.Component):
                     var script = document.createElement('script');script.src='/static/client.js';
                     
                     script.onload = function() {
-                        window["run_pixi_app"]();
+                        let handle = setInterval(function() {
+                            if (document.getElementsByTagName("canvas").length > 0) {
+                                clearInterval(handle);
+                                window["run_pixi_app"]();
+                            }
+                        }, 5);
                     }
                     
                     document.head.appendChild(script);
                     """
                 )
-                print(self._world)
 
         return call
 

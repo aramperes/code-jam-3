@@ -4,6 +4,7 @@ var Viewport = require('pixi-viewport');
 var PIXI_tilemap = require('pixi-tilemap');
 
 var jdCanvas = document.getElementsByTagName('canvas')[0];
+console.log(jdCanvas);
 var renderer = PIXI.autoDetectRenderer(800, 600, {backgroundColor: 0xffffff,
     antialias: true, view:jdCanvas});
 
@@ -47,28 +48,40 @@ function createWorld(){
         .pinch()
         .wheel()
         .decelerate();
-        viewportWorld.scale.set(0.5);
+        viewportWorld.scale.set(2);
         
     return viewportWorld;
 }
 
 function createMap(){
-    
+    const clientInstance = window["client_instance"];
+    const worldDim = clientInstance._world_piece_size * clientInstance._world_piece_count;
+    console.log(clientInstance._world_piece_size, clientInstance._world_piece_count);
+
     var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
-    maplength = 50; // number of tiles for length of map 2688px
-    mapwidth = 38; // number of tiles for width of map 2688px
     
     // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
     var size = 32;
     // bah, im too lazy, i just want to specify filenames from atlas
-    for (var i = 0 ; i < maplength; i++) {
-        for (var j = 0 ;j < mapwidth; j++) {
-            tilemap.addFrame("sandtile_1.png", i*size, j*size);
-            if (i%2==1 && j%2==1)
-                tilemap.addFrame("snowtile_2.png", i*size, j*size);
+
+    for (let x = 0; x < worldDim; x++) {
+        for (let y = 0; y < worldDim; y++) {
+            const terrain = clientInstance._world[x][y];
+            if (terrain === "D") {
+                tilemap.addFrame("sandtile_1.png", x * size, y * size);
+            } else if (terrain === "S") {
+                tilemap.addFrame("snowtile_2.png", x * size, y * size);
+            } else if (terrain === "W") {
+                tilemap.addFrame("watertile_2.png", x * size, y * size);
+            } else if (terrain === "P") {
+                tilemap.addFrame("grasstile_2.png", x * size, y * size);
+            } else if (terrain === "F") {
+                tilemap.addFrame("grasstile_1.png", x * size, y * size);
+            } else {
+                console.log("Unknown tile", terrain, "at", x, y);
+            }
         }
     }
-
     return tilemap;
 }
 
