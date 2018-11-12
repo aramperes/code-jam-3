@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "browser-sync start --server --files '*.js'",
-    "webpack": "webpack app.js -o dist/client.js --config webpack.config.js --mode production"
+    "webpack": "webpack app.js -o ../../services/client-host/project/static/client.js --mode production"
   },
   "repository": {
     "type": "git",

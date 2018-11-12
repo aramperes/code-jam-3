@@ -14,9 +14,9 @@ stage.addChild(world);
 
 var mapper;
 
-var loader = new PIXI.loaders.Loader();
-loader.add('tiles', "img/tiles2.json")
-        .add('walk', "img/spritesheets/walkb.json");
+var loader = new PIXI.loaders.Loader("/static");
+loader.add('tiles', "/img/tiles2.json")
+        .add('walk', "/img/spritesheets/walkb.json");
 loader.load(setup);
 
 function setup (loader, resources) {
@@ -55,8 +55,8 @@ function createWorld(){
 function createMap(){
     
     var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
-    maplength = 84 /3 // number of tiles for length of map 2688px
-    mapwidth = 63 / 3 // number of tiles for width of map 2688px
+    maplength = 50; // number of tiles for length of map 2688px
+    mapwidth = 38; // number of tiles for width of map 2688px
     
     // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
     var size = 32;

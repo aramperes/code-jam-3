@@ -21,6 +21,10 @@ class Client(flx.Component):
         self._piece_count = 0
         self._expected_piece_count = None
 
+        self._world = None
+        self._world_piece_count = None
+        self._world_piece_size = None
+
     def send(self, op, payload):
         print(" < " + op + " " + JSON.stringify(payload))
         self.socket.send(JSON.stringify({
@@ -201,17 +205,54 @@ class Client(flx.Component):
 
             if op == "world:init":
                 self._expected_piece_count = payload["terrain"]["pieces"] ** 2
+                self._world_piece_count = payload["terrain"]["pieces"]
+                self._world_piece_size = payload["terrain"]["piece_size"]
+
+                self._world = []
+                world_dim = self._world_piece_count * self._world_piece_size
+
+                for x in range(0, world_dim):
+                    self._world.append([None] * world_dim)
+
                 self.base.set_loading_status("Loading terrain (0%)...")
                 return
 
             if op == "world:terrain":
-                # todo save terrain locally
+                piece_x = payload["piece"]["x"]
+                piece_y = payload["piece"]["y"]
+                base_tile_x = self._world_piece_size * piece_x
+                base_tile_y = self._world_piece_size * piece_y
+
+                for tile_x_rel in range(0, self._world_piece_size):
+                    for tile_y_rel in range(0, self._world_piece_size):
+                        tile_x = tile_x_rel + base_tile_x
+                        tile_y = tile_y_rel + base_tile_y
+
+                        payload_index = tile_y + tile_x * self._world_piece_size
+                        self._world[tile_x][tile_y] = payload["terrain"][payload_index]
+
                 self._piece_count += 1
                 loading_percentage = self._piece_count / self._expected_piece_count * 100
-                print(self._piece_count, self._expected_piece_count, loading_percentage)
                 loading_percentage = RawJS("Math.round(loading_percentage);")
                 self.base.set_loading_status("Loading terrain (" + str(loading_percentage) + "%)...")
                 return
+
+            if op == "world:ready":
+
+                self.base.create_canvas()
+
+                RawJS(
+                    """
+                    var script = document.createElement('script');script.src='/static/client.js';
+                    
+                    script.onload = function() {
+                        window["run_pixi_app"]();
+                    }
+                    
+                    document.head.appendChild(script);
+                    """
+                )
+                print(self._world)
 
         return call
 

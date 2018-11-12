@@ -1,6 +1,7 @@
 from flexx import flx, event
 
 from flexx_app.client import Client
+from flexx_app.widgets.game.game_canvas import GameCanvasWidget
 from flexx_app.widgets.loading_info import LoadingInfoWidget
 from flexx_app.widgets.lobby.list_parent import LobbyListParentWidget
 from flexx_app.widgets.username_prompt import UsernamePromptWidget
@@ -26,6 +27,7 @@ class BaseWidget(flx.Widget):
         self.loading_info = LoadingInfoWidget(visible=True)
 
         self.client = Client(self.ws_url, self)
+        self.canvas = None
 
     def set_loading_status(self, status):
         self.loading_info.set_status(status)
@@ -67,3 +69,6 @@ class BaseWidget(flx.Widget):
     def lobby_config_success(self, lobby_id):
         if self.lobby_parent:
             self.lobby_parent.confirm_config_edit(lobby_id)
+
+    def create_canvas(self):
+        self.canvas = GameCanvasWidget(parent=self, client=self.client)
