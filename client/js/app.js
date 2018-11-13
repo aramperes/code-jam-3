@@ -21,7 +21,7 @@ loader.add('tiles', "/img/tiles2.json")
 loader.load(setup);
 
 function setup (loader, resources) {
-	 
+
     var tilemap = createMap();
     var animChar = createChar();
     world.addChild(tilemap);
@@ -40,7 +40,7 @@ function createWorld(){
             screenHeight: renderer.screen.height,
             worldWidth: worldWidth,
             worldHeight: worldHeight,
-        
+
             interaction: renderer.interaction  // the interaction module is important for wheel() to work properly when renderer.view is placed or scaled
         });
     viewportWorld
@@ -49,7 +49,7 @@ function createWorld(){
         .wheel()
         .decelerate();
         viewportWorld.scale.set(2);
-        
+
     return viewportWorld;
 }
 
@@ -59,14 +59,15 @@ function createMap(){
     console.log(clientInstance._world_piece_size, clientInstance._world_piece_count);
 
     var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
-    
+
     // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
     var size = 32;
     // bah, im too lazy, i just want to specify filenames from atlas
 
     for (let x = 0; x < worldDim; x++) {
         for (let y = 0; y < worldDim; y++) {
-            const terrain = clientInstance._world[x][y];
+            const terrain = clientInstance._world_terrain[x][y];
+            const feature = clientInstance._world_features[x][y];
             if (terrain === "D") {
                 tilemap.addFrame("sandtile_1.png", x * size, y * size);
             } else if (terrain === "S") {
@@ -78,7 +79,22 @@ function createMap(){
             } else if (terrain === "F") {
                 tilemap.addFrame("grasstile_1.png", x * size, y * size);
             } else {
-                console.log("Unknown tile", terrain, "at", x, y);
+                console.log("Unknown terrain tile", terrain, "at", x, y);
+            }
+
+            if (feature === "fC") {
+                if (clientInstance._world_features[x + 1] &&
+                    clientInstance._world_features[x + 1][y] === "fC" &&
+                    Math.random() < 0.5) {
+                    // big house (west part)
+                    clientInstance._world_features[x + 1][y] = "fC_bigEast";
+                    tilemap.addFrame("house_big_1.png", x * size, y * size);
+                } else {
+                    // small house
+                    tilemap.addFrame("house_small.png", x * size, y * size);
+                }
+            } else if (feature === "fC_bigEast") {
+                tilemap.addFrame("house_big_2.png", x * size, y * size);
             }
         }
     }
@@ -99,10 +115,7 @@ function createChar(){
     animCharSprite.y = renderer.screen.height / 2;
     animCharSprite.anchor.set(0.5);
     // animCharSprite.gotoAndPlay(0.0000009);
-    animCharSprite.scale.set(1);
-    animCharSprite.click = () => {
-        alert("I am walkin here!!!");
-    }
+    animCharSprite.scale.set(0.25);
 
     animCharSprite.buttonMode = true;
 

@@ -21,7 +21,8 @@ class Client(flx.Component):
         self._piece_count = 0
         self._expected_piece_count = None
 
-        self._world = None
+        self._world_terrain = None
+        self._world_features = None
         self._world_piece_count = None
         self._world_piece_size = None
 
@@ -208,11 +209,13 @@ class Client(flx.Component):
                 self._world_piece_count = payload["terrain"]["pieces"]
                 self._world_piece_size = payload["terrain"]["piece_size"]
 
-                self._world = []
+                self._world_terrain = []
+                self._world_features = []
                 world_dim = self._world_piece_count * self._world_piece_size
 
                 for x in range(0, world_dim):
-                    self._world.append([None] * world_dim)
+                    self._world_terrain.append([None] * world_dim)
+                    self._world_features.append([None] * world_dim)
 
                 self.base.set_loading_status("Loading terrain (0%)...")
                 return
@@ -229,7 +232,8 @@ class Client(flx.Component):
                         tile_x = tile_x_rel + base_tile_x
                         tile_y = tile_y_rel + base_tile_y
 
-                        self._world[tile_x][tile_y] = payload["terrain"][payload_index]
+                        self._world_terrain[tile_x][tile_y] = payload["terrain"][payload_index]
+                        self._world_features[tile_x][tile_y] = payload["features"][payload_index]
                         payload_index += 1
 
                 self._piece_count += 1
