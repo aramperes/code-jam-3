@@ -4,6 +4,7 @@ var Viewport = require('pixi-viewport');
 var PIXI_tilemap = require('pixi-tilemap');
 
 var jdCanvas = document.getElementsByTagName('canvas')[0];
+console.log(jdCanvas);
 var renderer = PIXI.autoDetectRenderer(800, 600, {backgroundColor: 0xffffff,
     antialias: true, view:jdCanvas});
 
@@ -14,13 +15,13 @@ stage.addChild(world);
 
 var mapper;
 
-var loader = new PIXI.loaders.Loader();
-loader.add('tiles', "img/tiles2.json")
-        .add('walk', "img/spritesheets/walkb.json");
+var loader = new PIXI.loaders.Loader("/static");
+loader.add('tiles', "/img/tiles2.json")
+        .add('walk', "/img/spritesheets/walkb.json");
 loader.load(setup);
 
 function setup (loader, resources) {
-	 
+
     var tilemap = createMap();
     var animChar = createChar();
     world.addChild(tilemap);
@@ -39,7 +40,7 @@ function createWorld(){
             screenHeight: renderer.screen.height,
             worldWidth: worldWidth,
             worldHeight: worldHeight,
-        
+
             interaction: renderer.interaction  // the interaction module is important for wheel() to work properly when renderer.view is placed or scaled
         });
     viewportWorld
@@ -47,28 +48,56 @@ function createWorld(){
         .pinch()
         .wheel()
         .decelerate();
-        viewportWorld.scale.set(0.5);
-        
+        viewportWorld.scale.set(2);
+
     return viewportWorld;
 }
 
 function createMap(){
-    
+    const clientInstance = window["client_instance"];
+    const worldDim = clientInstance._world_piece_size * clientInstance._world_piece_count;
+    console.log(clientInstance._world_piece_size, clientInstance._world_piece_count);
+
     var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, PIXI.utils.TextureCache['tiles_image']);
-    maplength = 84 /3 // number of tiles for length of map 2688px
-    mapwidth = 63 / 3 // number of tiles for width of map 2688px
-    
+
     // var tilemap = new PIXI.tilemap.CompositeRectTileLayer(0, [resources['atlas_image'].texture]);
     var size = 32;
     // bah, im too lazy, i just want to specify filenames from atlas
-    for (var i = 0 ; i < maplength; i++) {
-        for (var j = 0 ;j < mapwidth; j++) {
-            tilemap.addFrame("sandtile_1.png", i*size, j*size);
-            if (i%2==1 && j%2==1)
-                tilemap.addFrame("snowtile_2.png", i*size, j*size);
+
+    for (let x = 0; x < worldDim; x++) {
+        for (let y = 0; y < worldDim; y++) {
+            const terrain = clientInstance._world_terrain[x][y];
+            const feature = clientInstance._world_features[x][y];
+            if (terrain === "D") {
+                tilemap.addFrame("sandtile_1.png", x * size, y * size);
+            } else if (terrain === "S") {
+                tilemap.addFrame("snowtile_2.png", x * size, y * size);
+            } else if (terrain === "W") {
+                tilemap.addFrame("watertile_2.png", x * size, y * size);
+            } else if (terrain === "P") {
+                tilemap.addFrame("grasstile_2.png", x * size, y * size);
+            } else if (terrain === "F") {
+                tilemap.addFrame("grasstile_1.png", x * size, y * size);
+            } else {
+                console.log("Unknown terrain tile", terrain, "at", x, y);
+            }
+
+            if (feature === "fC") {
+                if (clientInstance._world_features[x + 1] &&
+                    clientInstance._world_features[x + 1][y] === "fC" &&
+                    Math.random() < 0.5) {
+                    // big house (west part)
+                    clientInstance._world_features[x + 1][y] = "fC_bigEast";
+                    tilemap.addFrame("house_big_1.png", x * size, y * size);
+                } else {
+                    // small house
+                    tilemap.addFrame("house_small.png", x * size, y * size);
+                }
+            } else if (feature === "fC_bigEast") {
+                tilemap.addFrame("house_big_2.png", x * size, y * size);
+            }
         }
     }
-
     return tilemap;
 }
 
@@ -86,10 +115,7 @@ function createChar(){
     animCharSprite.y = renderer.screen.height / 2;
     animCharSprite.anchor.set(0.5);
     // animCharSprite.gotoAndPlay(0.0000009);
-    animCharSprite.scale.set(1);
-    animCharSprite.click = () => {
-        alert("I am walkin here!!!");
-    }
+    animCharSprite.scale.set(0.25);
 
     animCharSprite.buttonMode = true;
 
